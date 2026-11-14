@@ -29,19 +29,34 @@ function ensureCtx() {
     }
     const k = 1 / Math.sqrt(ss); for (let i = pd; i < n + pd; i++) d[i] *= k;
   });
-  const conv = ctx.createConvolver(); conv.normalize = false; conv.buffer = ir;
-  const wet = ctx.createGain(); wet.gain.value = S.reverb ? 0.75 : 0;
-  conv.connect(wet); wet.connect(master);
-
-  const groups = {};
+  const groups = {}, sends = [];
   for (const g of GROUPS) {
     const gn = ctx.createGain(); gn.gain.value = S.mute[g.id] ? 0 : 1;
     const send = ctx.createGain(); send.gain.value = g.send;
-    gn.connect(master); gn.connect(send); send.connect(conv);
-    groups[g.id] = gn;
+    gn.connect(master); gn.connect(send);
+    groups[g.id] = gn; sends.push(send);
   }
-  S.graph = { wet, out, groups };
+  S.graph = { out, groups, sends, ir, master, conv: null, wet: null };
+  newReverb();
   return ctx;
+}
+// (Re)build the reverb: a fresh convolver has an empty tail, so swapping it in silences
+// whatever was still ringing in the old one.
+function newReverb() {
+  const ctx = S.ctx, g = S.graph;
+  const conv = ctx.createConvolver(); conv.normalize = false; conv.buffer = g.ir;
+  const wet = ctx.createGain(); wet.gain.value = S.reverb ? 0.75 : 0;
+  conv.connect(wet); wet.connect(g.master);
+  for (const send of g.sends) send.connect(conv);
+  g.conv = conv; g.wet = wet;
+}
+// Fade out the ringing reverb tail quickly (no click) and replace it with a silent one.
+function cutReverb() {
+  const g = S.graph, oldConv = g.conv, oldWet = g.wet;
+  for (const send of g.sends) send.disconnect(oldConv);
+  oldWet.gain.setTargetAtTime(0, S.ctx.currentTime, 0.03);
+  setTimeout(() => { oldWet.disconnect(); oldConv.disconnect(); }, 300);
+  newReverb();
 }
 const setGain = (param, v) => { if (S.ctx) param.setTargetAtTime(v, S.ctx.currentTime, 0.02); };
 
@@ -76,6 +91,7 @@ function stop() {
   S.offset = now();
   const nodes = S.nodes; S.nodes = []; S.playing = false;
   for (const n of nodes) { try { n.stop(); } catch (e) { /* already stopped */ } }
+  cutReverb();
   updateBtn(); S.dirty = true;
 }
 function updateBtn() {
