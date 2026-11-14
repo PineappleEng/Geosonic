@@ -116,6 +116,11 @@ document.addEventListener('keydown', e => {
 $('beats').addEventListener('change', e => { S.beats = +e.target.value; rebuild(); });
 $('bpm').addEventListener('input', e => { $('bpmVal').textContent = e.target.value; });
 $('bpm').addEventListener('change', e => { S.bpm = +e.target.value; rebuild(); });
+$('volume').addEventListener('input', e => {
+  $('volumeVal').textContent = e.target.value;
+  S.volume = e.target.value / 100;
+  if (S.graph) setGain(S.graph.out.gain, S.volume);
+});
 $('reverb').addEventListener('change', e => { S.reverb = e.target.checked; if (S.graph) setGain(S.graph.wet.gain, S.reverb ? 0.75 : 0); });
 $('sampleBtn').addEventListener('click', () => processImage(sampleImage(), 'Sample image (generated nebula)'));
 $('fileLbl').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } });
