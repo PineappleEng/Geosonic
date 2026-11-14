@@ -22,14 +22,12 @@ async function rebuild() {
   $('cMeterBy').textContent = `${video ? 'video' : 'image'} is ${m.aspect.toFixed(2)} : 1 (${m.meter === 5 ? 'panorama' : m.meter === 3 ? 'portrait' : 'landscape'})`;
   m.motionRel = stretch(m.motion);
   $('cSwing').textContent = m.swing < 0.01 ? 'straight' : `${Math.round(m.swing / 0.17 * 100)}%`;
-  $('s6').classList.add('active');
   $('playBtn').disabled = true;
   $('status').textContent = 'Rendering instruments…';
   await new Promise(r => setTimeout(r, 30));
   const stems = renderStems(m);
   if (job !== S.job) return;
   S.stems = stems;
-  $('s6').classList.remove('active');
   $('playBtn').disabled = false;
   $('status').textContent = `Ready · ${m.ev.length} notes · ${fmt(m.total)}`;
 }
