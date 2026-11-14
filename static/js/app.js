@@ -60,23 +60,50 @@ async function changeVoice(gid, id) {
 }
 
 // ---------------------------------------------------------- mixer
+// Each part gets a row of round icon buttons ("bubbles"), one per instrument it can use.
+// They behave as a radio group: click to choose, or Tab in and use the arrow keys.
 const mixer = $('mixer');
 for (const g of GROUPS) {
-  S.voice[g.id] = ROLE_VOICES[g.role][0];
+  const ids = ROLE_VOICES[g.role];
+  S.voice[g.id] = ids[0];
   const row = document.createElement('div');
   row.className = 'inst'; row.dataset.group = g.id;
-  const options = ROLE_VOICES[g.role].map(id => `<option value="${id}">${VOICES[id].name}</option>`).join('');
+  const bubbles = ids.map((id, k) => {
+    const name = VOICES[id].name;
+    return `<button type="button" class="bubble" role="radio" data-voice="${id}" data-name="${name}" aria-label="${name}"`
+      + ` aria-checked="${k === 0}" tabindex="${k === 0 ? 0 : -1}">${iconSvg(id)}</button>`;
+  }).join('');
   row.innerHTML = `<input type="checkbox" id="mute-${g.id}" checked aria-label="Play the ${g.name.toLowerCase()}">`
     + `<span class="sw ${g.sw}"></span>`
-    + `<label class="nm" for="mute-${g.id}">${g.name}<small class="src">${g.src}</small></label>`
-    + `<select id="voice-${g.id}" aria-label="${g.name} instrument">${options}</select>`;
+    + `<div class="nm"><label for="mute-${g.id}">${g.name}</label><small class="src">${g.src}</small>`
+    + `<span class="cur" id="cur-${g.id}">${VOICES[ids[0]].name}</span></div>`
+    + `<div class="bubbles" role="radiogroup" aria-label="${g.name} instrument">${bubbles}</div>`;
+
   row.querySelector('input').addEventListener('change', e => {
     S.mute[g.id] = !e.target.checked;
     row.classList.toggle('muted', S.mute[g.id]);
     if (S.graph) setGain(S.graph.groups[g.id].gain, S.mute[g.id] ? 0 : 1);
     S.dirty = true;
   });
-  row.querySelector('select').addEventListener('change', e => changeVoice(g.id, e.target.value));
+
+  const buttons = [...row.querySelectorAll('.bubble')];
+  const choose = (btn, focus) => {
+    for (const b of buttons) { const on = b === btn; b.setAttribute('aria-checked', on); b.tabIndex = on ? 0 : -1; }
+    if (focus) btn.focus();
+    $('cur-' + g.id).textContent = btn.dataset.name;
+    if (S.voice[g.id] !== btn.dataset.voice) changeVoice(g.id, btn.dataset.voice);
+  };
+  buttons.forEach((btn, k) => {
+    btn.addEventListener('click', () => choose(btn, false));
+    btn.addEventListener('keydown', e => {
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      let next = null;
+      if (step) next = buttons[(k + step + buttons.length) % buttons.length];
+      else if (e.key === 'Home') next = buttons[0];
+      else if (e.key === 'End') next = buttons[buttons.length - 1];
+      if (next) { e.preventDefault(); choose(next, true); }
+    });
+  });
   mixer.appendChild(row);
 }
 
