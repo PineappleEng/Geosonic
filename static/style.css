@@ -138,9 +138,9 @@ select { font: 0.9rem var(--font-body); color: var(--ink); background: var(--sur
 .map dd .v { font-family: var(--font-data); color: var(--muted); margin-right: 6px; }
 .map dd b { font-family: var(--font-data); font-weight: 500; }
 
-/* Mixer: one row per part, two columns of parts on wide screens */
-.mixer { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)); gap: 6px 24px; }
-.inst { display: grid; grid-template-columns: 18px 12px minmax(0, 8rem) minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px 8px; border-radius: 8px; font-size: 0.86rem; }
+/* Mixer: one compact row per part, up to four across */
+.mixer { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr)); gap: 6px 20px; }
+.inst { display: grid; grid-template-columns: 18px 12px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 8px; font-size: 0.86rem; }
 .inst:hover { background: color-mix(in srgb, var(--line) 40%, transparent); }
 .inst .sw { width: 10px; height: 10px; margin: 0; border-radius: 50%; opacity: 0.35; transition: opacity 60ms linear, transform 60ms linear; }
 .inst.on .sw { opacity: 1; transform: scale(1.3); }
@@ -148,42 +148,69 @@ select { font: 0.9rem var(--font-body); color: var(--ink); background: var(--sur
 .inst .nm label { font-weight: 600; cursor: pointer; }
 .inst .src { display: block; color: var(--muted); font-size: 0.75rem; }
 .inst .cur { display: block; color: var(--accent); font-size: 0.78rem; font-weight: 500; margin-top: 2px; }
-.inst.muted .nm, .inst.muted .bubbles { opacity: 0.45; }
+.inst.muted .nm, .inst.muted .bubble.main { opacity: 0.45; }
 .inst.muted .nm label { text-decoration: line-through; }
 
-/* Instrument bubbles: round icon buttons that float; the chosen one is filled and bobs gently */
-.bubbles { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+/* Bubbles: round icon buttons */
 .bubble {
-  position: relative; width: 40px; height: 40px; padding: 0; border-radius: 50%;
+  position: relative; width: 44px; height: 44px; padding: 0; border-radius: 50%;
   display: grid; place-items: center; cursor: pointer;
   color: var(--muted); background: var(--surface); border: 1px solid var(--line);
-  box-shadow: 0 2px 6px color-mix(in srgb, var(--ink) 12%, transparent);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--ink) 14%, transparent);
   transition: transform 150ms ease, box-shadow 150ms ease, background-color 150ms ease, color 150ms ease;
 }
 .bubble svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.bubble:hover { transform: translateY(-3px); color: var(--ink); box-shadow: 0 8px 16px color-mix(in srgb, var(--ink) 16%, transparent); }
-.bubble[aria-checked="true"] {
-  color: var(--accent-ink); background: var(--accent); border-color: var(--accent);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 45%, transparent);
-  animation: bubble-float 3.2s ease-in-out infinite;
-}
+.bubble:hover { transform: translateY(-2px); color: var(--ink); box-shadow: 0 8px 16px color-mix(in srgb, var(--ink) 18%, transparent); }
 .bubble:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-/* the instrument's name, shown above the bubble on hover or keyboard focus */
-.bubble::after {
-  content: attr(data-name); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-  white-space: nowrap; pointer-events: none; opacity: 0; z-index: 2;
-  font: 500 0.72rem/1 var(--font-body); color: var(--surface); background: var(--ink);
-  padding: 5px 8px; border-radius: 6px; transition: opacity 120ms ease;
+
+/* the part's bubble: its current instrument, floating; the badge counts the choices */
+.bubble.main {
+  width: 50px; height: 50px; color: var(--accent-ink); background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 40%, transparent);
+  animation: bubble-float 3.4s ease-in-out infinite;
 }
-.bubble:hover::after, .bubble:focus-visible::after { opacity: 1; }
+.bubble.main svg { width: 24px; height: 24px; }
+.bubble.main:hover { color: var(--accent-ink); animation-play-state: paused; }
+.bubble.main[aria-expanded="true"] { animation: none; }
+.bubble .more {
+  position: absolute; right: -4px; bottom: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px;
+  display: grid; place-items: center; font: 600 0.66rem/1 var(--font-data);
+  color: var(--accent); background: var(--surface); border: 1px solid var(--line);
+}
+
+/* the ring of choices around a part's bubble */
+.orbit { position: fixed; inset: 0; z-index: 50; }
+.orbit-scrim { position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter: blur(2px); opacity: 0; transition: opacity 160ms ease; }
+.orbit.open .orbit-scrim { opacity: 1; }
+.orbit-ring { position: absolute; width: 0; height: 0; }
+.orbit-ring > .hub, .orbit-slot { position: absolute; left: 0; top: 0; }
+.bubble.hub {
+  width: 54px; height: 54px; transform: translate(-50%, -50%);
+  color: var(--accent-ink); background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.bubble.hub:hover { transform: translate(-50%, -50%) scale(0.94); color: var(--accent-ink); }
+.orbit-name {
+  position: absolute; left: 0; top: 36px; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+  font: 600 0.74rem/1 var(--font-body); color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 9px;
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.orbit-slot {
+  transform: translate(-50%, -50%) scale(0.3); opacity: 0;
+  transition: transform 260ms cubic-bezier(.2, .9, .3, 1.25), opacity 180ms ease;
+  transition-delay: calc(var(--i) * 22ms);
+}
+.orbit.open .orbit-slot { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1); opacity: 1; }
+.orbit.open .opt { animation: bubble-float 3s ease-in-out infinite; animation-delay: calc(var(--i) * -0.37s); }
+.opt[aria-pressed="true"] { color: var(--accent); border: 2px solid var(--accent); }
+.opt:hover, .opt:focus-visible { animation-play-state: paused; color: var(--ink); }
+.opt[aria-pressed="true"]:hover { color: var(--accent); }
+
 @keyframes bubble-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-@media (max-width: 520px) {
-  .inst { grid-template-columns: 18px 12px minmax(0, 1fr); }
-  .bubbles { grid-column: 1 / -1; }
-}
 @media (prefers-reduced-motion: reduce) {
-  .bubble { transition: none; }
-  .bubble[aria-checked="true"] { animation: none; }
+  .bubble, .orbit-slot, .orbit-scrim { transition: none; }
+  .bubble.main, .orbit.open .opt { animation: none; }
 }
 
 /* About this piece */
