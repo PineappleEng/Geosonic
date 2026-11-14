@@ -13,7 +13,9 @@ function ensureCtx() {
   shaper.curve = curve;
   const comp = ctx.createDynamicsCompressor();
   comp.threshold.value = -8; comp.knee.value = 6; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.2;
-  master.connect(shaper); shaper.connect(comp); comp.connect(ctx.destination);
+  // output volume sits after the compressor so it scales loudness without changing the tone
+  const out = ctx.createGain(); out.gain.value = S.volume;
+  master.connect(shaper); shaper.connect(comp); comp.connect(out); out.connect(ctx.destination);
 
   // vast, dark space: a faint burst over a very long tail, after a 40 ms pre-delay
   const sr = ctx.sampleRate, n = Math.floor(6.0 * sr), pd = Math.floor(0.04 * sr), ir = ctx.createBuffer(2, n + pd, sr);
@@ -38,7 +40,7 @@ function ensureCtx() {
     gn.connect(master); gn.connect(send); send.connect(conv);
     groups[g.id] = gn;
   }
-  S.graph = { wet, groups };
+  S.graph = { wet, out, groups };
   return ctx;
 }
 const setGain = (param, v) => { if (S.ctx) param.setTargetAtTime(v, S.ctx.currentTime, 0.02); };
