@@ -32,9 +32,7 @@ function showMode(kind) {
   $('scanTitle').textContent = video ? 'Video from orbit' : 'View from orbit';
   $('beats').disabled = video; $('beatsNote').hidden = !video;
   $('scanModeGroup').hidden = !video;
-  const rx = $('reactive');   // reactive mode follows the cursor over a still image only
-  rx.disabled = video;
-  if (video && rx.checked) { rx.checked = false; rx.dispatchEvent(new Event('change')); }
+  R.ref = null;   // spotlight mode measures its range again on the new picture
 }
 // the caption under a video explains what the music is hearing in the chosen scan mode
 function videoCaption() {
@@ -42,6 +40,7 @@ function videoCaption() {
   $('imgCaption').textContent = S.videoScan === 'frame'
     ? `${name} · the music hears the whole frame on every beat. Click or drag on the timeline to jump.`
     : `${name} · the highlighted strip is what the music hears right now; it sweeps across the frame once per section. Click or drag on the timeline to jump.`;
+  spotlightCaption();
 }
 
 function processImage(img, label) {
@@ -65,6 +64,7 @@ function processImage(img, label) {
   dv.width = Math.max(1, Math.round(iw * ds)); dv.height = Math.max(1, Math.round(ih * ds));
   for (const id of ['cvR', 'cvG', 'cvB']) { $(id).width = w; $(id).height = h; }
   $('imgCaption').textContent = `${label} · click or drag on the image to jump to a slice. You can also drop a photo or video of Earth taken from space here.`;
+  spotlightCaption();
   $('d1').textContent = `${iw} × ${ih} px image, analysed at ${w} × ${h} px.`;
   rebuild();
 }

@@ -199,6 +199,12 @@ function drawVideo(cv, t) {
 function syncVideo(t) {
   const v = S.src;
   if (!S.proc || S.proc.kind !== 'video' || v.readyState < 1) return;
+  if (R.hover) {   // spotlight mode: the video plays on by itself, looping, while the circle listens
+    const st = spotTime();
+    if (v.paused) { v.currentTime = st; v.play().catch(() => {}); }
+    else if (Math.abs(v.currentTime - st) > 0.25) v.currentTime = st;
+    return;
+  }
   const target = Math.min(t, S.proc.duration - 0.05);
   if (S.playing && t < S.proc.duration) {
     if (v.paused) { v.currentTime = target; v.play().catch(() => {}); }
@@ -211,12 +217,14 @@ function syncVideo(t) {
 
 function frame() {
   if (S.music && S.proc) syncVideo(now());
-  if (S.music && (S.playing || S.dirty)) {
-    const t = now(), C = colors();
+  const spot = R.hover && R.focus;
+  if (S.music && (S.playing || S.dirty || (spot && S.proc.kind === 'video'))) {
     const cols = S.proc.kind === 'video' ? S.music.used : 0;
-    if (cols) { drawVideo($('imgCv'), t); drawScan($('timeCv'), S.proc.slit, t, true, cols); }
-    else if (R.hover && R.focus) drawSpotlight($('imgCv'));   // spotlight mode: only the circle is heard
+    const t = spot && cols ? spotTime() : now(), C = colors();   // a video under the spotlight keeps moving
+    if (spot) drawSpotlight($('imgCv'));   // spotlight mode: only the circle is heard
+    else if (cols) drawVideo($('imgCv'), t);
     else drawScan($('imgCv'), S.src, t, true);
+    if (cols) drawScan($('timeCv'), S.proc.slit, t, true, cols);
     drawScan($('cvR'), S.proc.chans[0], t, false, cols);
     drawScan($('cvG'), S.proc.chans[1], t, false, cols);
     drawScan($('cvB'), S.proc.chans[2], t, false, cols);
