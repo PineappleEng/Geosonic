@@ -66,6 +66,7 @@ function now() {
 }
 function play() {
   if (!S.stems) return;
+  reactiveEnd();   // normal playback takes over from the cursor
   const ctx = ensureCtx();
   if (ctx.state === 'suspended') ctx.resume();
   // past the last beat only the reverb tail is left, and pausing cuts that, so start over
