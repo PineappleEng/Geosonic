@@ -24,12 +24,14 @@ async function rebuild() {
   m.motionRel = stretch(m.motion);
   $('cSwing').textContent = m.swing < 0.01 ? 'straight' : `${Math.round(m.swing / 0.17 * 100)}%`;
   $('playBtn').disabled = true;
+  updateExportButtons();
   $('status').textContent = 'Rendering instruments…';
   await new Promise(r => setTimeout(r, 30));
   const stems = renderStems(m);
   if (job !== S.job) return;
   S.stems = stems;
   $('playBtn').disabled = false;
+  updateExportButtons();
   $('status').textContent = `Ready · ${m.ev.length} notes · ${fmt(m.total)}`;
 }
 
@@ -236,6 +238,44 @@ scrubbable($('score'), e => {
 });
 
 $('playBtn').addEventListener('click', () => (S.playing ? stop() : play()));
+
+$('exportMp3Btn')?.addEventListener('click', async () => {
+  if (!S.music || !S.stems || S.exporting) return;
+  const lbl = $('exportMp3Lbl');
+  const origText = lbl ? lbl.textContent : 'Export MP3';
+  try {
+    await exportAudioMp3((msg, pct) => {
+      $('status').textContent = msg;
+      if (lbl && pct < 100) lbl.textContent = `MP3 ${pct}%`;
+    });
+    $('status').textContent = 'Audio exported as MP3!';
+  } catch (err) {
+    console.error(err);
+    $('status').textContent = 'Could not export MP3: ' + err.message;
+  } finally {
+    if (lbl) lbl.textContent = origText;
+    updateExportButtons();
+  }
+});
+
+$('exportMp4Btn')?.addEventListener('click', async () => {
+  if (!S.music || !S.stems || S.exporting) return;
+  const lbl = $('exportMp4Lbl');
+  const origText = lbl ? lbl.textContent : 'Export MP4';
+  try {
+    await exportVideoMp4((msg, pct) => {
+      $('status').textContent = msg;
+      if (lbl && pct < 100) lbl.textContent = `MP4 ${pct}%`;
+    });
+    $('status').textContent = 'Video exported as MP4!';
+  } catch (err) {
+    console.error(err);
+    $('status').textContent = 'Could not export MP4: ' + err.message;
+  } finally {
+    if (lbl) lbl.textContent = origText;
+    updateExportButtons();
+  }
+});
 document.addEventListener('keydown', e => {
   if (e.code !== 'Space' || e.target.closest('input, select, button, label')) return;
   e.preventDefault(); if (!$('playBtn').disabled) (S.playing ? stop() : play());
@@ -281,3 +321,10 @@ new MutationObserver(() => { S.dirty = true; }).observe(document.documentElement
 
 processImage(sampleImage(), 'Sample image (generated view of Earth from orbit)');
 requestAnimationFrame(frame);
+
+document.addEventListener('click', e => {
+  const dd = $('exportDropdown');
+  if (dd && dd.open && (!dd.contains(e.target) || e.target.closest('.export-item'))) {
+    dd.open = false;
+  }
+});

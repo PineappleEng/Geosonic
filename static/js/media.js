@@ -122,6 +122,7 @@ async function processVideo(file) {
   const url = URL.createObjectURL(file), v = document.createElement('video');
   v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
   $('playBtn').disabled = true;
+  if (typeof updateExportButtons === 'function') updateExportButtons();
   $('status').textContent = 'Reading video frames…';
   // show the video while it is read (browsers only hand over frames of videos that are on the page)
   v.className = 'reading'; $('imgCv').hidden = true; $('drop').appendChild(v);
@@ -133,6 +134,7 @@ async function processVideo(file) {
     URL.revokeObjectURL(url);
     $('status').textContent = `Could not play ${file.name} in this browser. Try a WebM (VP8/VP9) or MP4 (H.264) file.`;
     $('playBtn').disabled = !S.stems;
+    if (typeof updateExportButtons === 'function') updateExportButtons();
     return;
   }
   v.remove(); $('imgCv').hidden = false;
