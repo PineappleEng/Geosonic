@@ -109,6 +109,7 @@ select { font: 0.9rem var(--font-body); color: var(--ink); background: var(--sur
 .channels { display: flex; flex-direction: column; gap: 14px; }
 .channels figure { margin: 0; min-width: 0; }
 .channels canvas { display: block; width: 100%; height: auto; max-height: 130px; object-fit: contain; border-radius: 6px; background: #000; cursor: ew-resize; touch-action: none; }
+.channels.video canvas { cursor: default; }
 @media (max-width: 760px) {
   .scan-grid { grid-template-columns: minmax(0, 1fr); }
   .channels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }

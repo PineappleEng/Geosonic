@@ -32,9 +32,8 @@ function showMode(kind) {
   $('scanTitle').textContent = video ? 'Video from orbit' : 'View from orbit';
   $('beats').disabled = video; $('beatsNote').hidden = !video;
   $('scanModeGroup').hidden = !video;
-  const rx = $('reactive');   // reactive mode follows the cursor over a still image only
-  rx.disabled = video;
-  if (video && rx.checked) { rx.checked = false; rx.dispatchEvent(new Event('change')); }
+  document.querySelector('.channels').classList.toggle('video', video);   // a video's panels show the frame, not a scrubbable scan
+  R.ref = null;   // spotlight mode measures its range again on the new picture
 }
 // the caption under a video explains what the music is hearing in the chosen scan mode
 function videoCaption() {
@@ -42,6 +41,7 @@ function videoCaption() {
   $('imgCaption').textContent = S.videoScan === 'frame'
     ? `${name} · the music hears the whole frame on every beat. Click or drag on the timeline to jump.`
     : `${name} · the highlighted strip is what the music hears right now; it sweeps across the frame once per section. Click or drag on the timeline to jump.`;
+  spotlightCaption();
 }
 
 function processImage(img, label) {
@@ -65,6 +65,7 @@ function processImage(img, label) {
   dv.width = Math.max(1, Math.round(iw * ds)); dv.height = Math.max(1, Math.round(ih * ds));
   for (const id of ['cvR', 'cvG', 'cvB']) { $(id).width = w; $(id).height = h; }
   $('imgCaption').textContent = `${label} · click or drag on the image to jump to a slice. You can also drop a photo or video of Earth taken from space here.`;
+  spotlightCaption();
   $('d1').textContent = `${iw} × ${ih} px image, analysed at ${w} × ${h} px.`;
   rebuild();
 }
@@ -139,19 +140,18 @@ async function processVideo(file) {
   const { frames, fps, duration, W, H, w, h } = data, n = frames.length;
   const A = pixelArrays(n * h * w);
   frames.forEach((d, u) => { for (let q = 0; q < w * h; q++) setPixel(A, u * h * w + q, d[q * 4] / 255, d[q * 4 + 1] / 255, d[q * 4 + 2] / 255); });
-  // slit-scans: column u = frame u averaged across its width (a picture of the video through time)
+  // slit-scan for the timeline: column u = frame u averaged across its width (a picture of the video through time)
   const rowMean = (arr, u, y) => { let sum = 0; const o = (u * h + y) * w; for (let x = 0; x < w; x++) sum += arr[o + x]; return sum / w; };
-  const chans = [A.r, A.g, A.b].map((arr, k) => channelCanvas(n, h, (x, y, kk) => kk === k ? rowMean(arr, x, y) : 0));
   const slit = channelCanvas(n, h, (x, y, kk) => rowMean([A.r, A.g, A.b][kk], x, y));
   if (S.videoUrl) URL.revokeObjectURL(S.videoUrl);
   S.videoUrl = url;
   v.addEventListener('seeked', () => { S.dirty = true; });
   S.src = v;
-  S.proc = { kind: 'video', U: n, h, k: w, aspect: W / H, fps, duration, iw: W, ih: H, ...A, chans, slit, name: file.name };
+  S.proc = { kind: 'video', U: n, h, k: w, aspect: W / H, fps, duration, iw: W, ih: H, ...A, slit, name: file.name };
   showMode('video');
   const dv = $('imgCv'), ds = Math.min(1, 1200 / W);
   dv.width = Math.max(1, Math.round(W * ds)); dv.height = Math.max(1, Math.round(H * ds));
-  for (const id of ['cvR', 'cvG', 'cvB']) { $(id).width = n; $(id).height = h; }
+  for (const id of ['cvR', 'cvG', 'cvB']) { $(id).width = 240; $(id).height = Math.max(2, Math.round(240 * H / W)); }   // drawn live from the video
   videoCaption();
   $('d1').textContent = `${W} × ${H} px video, ${duration.toFixed(1)} s, analysed as ${n} frames of ${w} × ${h} px (${fps.toFixed(1)} per second).`;
   rebuild();

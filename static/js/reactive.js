@@ -5,6 +5,8 @@
 // arpeggio, light mode, sparkles and rests, hue key, detail busyness). Continuity comes from time:
 // the melody steps from its last note, chords change on bar lines and the key only moves when the
 // colours stay changed for a while. Scrolling over the image changes the size of the circle.
+// On a video the circle hears the frame on screen while the video plays on (looping), and motion
+// inside the circle counts as detail, as it does in the scan.
 
 const SPOT = { radius: 0.16, min: 0.04, max: 0.5 };   // circle radius as a fraction of image height
 const SUSTAIN_BARS = 2;     // long notes (pad, bass, drone, texture) last this long unless the chord changes
@@ -14,46 +16,62 @@ const WANDER = [0, 1, 2, 1, 0, -1, 0, 1];   // scale steps around red's pitch, s
 
 const R = {
   on: false, hover: false, focus: null, timer: null, nextAt: 0,
-  st: null, ref: null, show: null,
+  st: null, ref: null, show: null, savedCaption: null,
+  vt0: 0, vtAt: 0,    // video: the spotlight's position in the video, anchored to the audio clock
   beatClip: null, sustClip: null, sustKey: '', sustAt: -1e9,
   cache: new Map(),   // rendered long notes, keyed by their notes and instruments (they are slow to render)
 };
 
-const reactiveAllowed = () => !!(S.proc && S.proc.kind === 'image' && S.music && S.stems);
+const reactiveAllowed = () => !!(S.proc && S.music && S.stems);
+const spotVideo = () => S.proc && S.proc.kind === 'video';
+
+// video: where the spotlight is in the video (seconds, looping over the part the music covers)
+function spotTime(at = S.ctx ? S.ctx.currentTime : 0) {
+  const len = S.music.used / S.proc.fps;
+  return mod(R.vt0 + (at - R.vtAt), len);
+}
+const frameAt = t => clamp(Math.floor(t * S.proc.fps), 0, S.music.used - 1);
 
 // ---------------------------------------------------------- measuring the circle
 // Everything inside the circle centred on (fx, fy). Distances are in image heights, so the
-// circle stays round on any shape of image.
-function measure(fx, fy, radius = SPOT.radius) {
-  const p = S.proc, U = p.U, h = p.h, r2 = radius * radius, rx = radius / p.aspect;
-  let n = 0, sr = 0, sg = 0, sb = 0, sl = 0, sl2 = 0, sb2 = 0, sc = 0, hx = 0, hy = 0;
+// circle stays round on any shape of image. An image's columns are its units; a video's are the
+// columns of one frame (frame f), and its motion is the change since the frame before.
+function measure(fx, fy, radius = SPOT.radius, frame = 0) {
+  const p = S.proc, video = p.kind === 'video', h = p.h, r2 = radius * radius, rx = radius / p.aspect;
+  const W = video ? p.k : p.U;
+  const at = video ? (x, y) => (frame * h + y) * p.k + x : (x, y) => x * h + y;
+  const back = video && frame > 0 ? -h * p.k : 0;   // offset to the same pixel one frame earlier
+  let n = 0, sr = 0, sg = 0, sb = 0, sl = 0, sl2 = 0, sb2 = 0, sc = 0, hx = 0, hy = 0, mv = 0;
   const add = i => {
     const R_ = p.r[i], G = p.g[i], B = p.b[i], L = p.lum[i], C = p.chroma[i], a = TAU * p.hue[i];
     n++; sr += R_; sg += G; sb += B; sl += L; sl2 += L * L; sb2 += B * B; sc += C;
     hx += C * Math.cos(a); hy += C * Math.sin(a);
+    if (back) mv += Math.abs(L - p.lum[i + back]);
   };
-  const u0 = Math.max(0, Math.floor((fx - rx) * U)), u1 = Math.min(U - 1, Math.ceil((fx + rx) * U));
+  const x0 = Math.max(0, Math.floor((fx - rx) * W)), x1 = Math.min(W - 1, Math.ceil((fx + rx) * W));
   const y0 = Math.max(0, Math.floor((fy - radius) * h)), y1 = Math.min(h - 1, Math.ceil((fy + radius) * h));
-  for (let u = u0; u <= u1; u++) {
-    const dx = ((u + 0.5) / U - fx) * p.aspect;
-    for (let y = y0; y <= y1; y++) { const dy = (y + 0.5) / h - fy; if (dx * dx + dy * dy <= r2) add(u * h + y); }
+  for (let x = x0; x <= x1; x++) {
+    const dx = ((x + 0.5) / W - fx) * p.aspect;
+    for (let y = y0; y <= y1; y++) { const dy = (y + 0.5) / h - fy; if (dx * dx + dy * dy <= r2) add(at(x, y)); }
   }
-  if (!n) add(clamp(Math.floor(fx * U), 0, U - 1) * h + clamp(Math.floor(fy * h), 0, h - 1));   // tiny circle: the pixel under the cursor
-  const lum = sl / n, b = sb / n;
+  if (!n) add(at(clamp(Math.floor(fx * W), 0, W - 1), clamp(Math.floor(fy * h), 0, h - 1)));   // tiny circle: the pixel under the cursor
+  const lum = sl / n, b = sb / n, motion = mv / n;
   return {
-    r: sr / n, g: sg / n, b, lum, chroma: sc / n, hue: mod(Math.atan2(hy, hx) / TAU, 1),
-    detail: Math.min(1, 4 * Math.sqrt(Math.max(0, sl2 / n - lum * lum))),
+    r: sr / n, g: sg / n, b, lum, chroma: sc / n, hue: mod(Math.atan2(hy, hx) / TAU, 1), motion,
+    detail: Math.min(1, 4 * Math.sqrt(Math.max(0, sl2 / n - lum * lum)) + 4 * motion),
     blueStd: Math.sqrt(Math.max(0, sb2 / n - b * b)),
   };
 }
 
 // The range each value takes over this picture at this circle size, so the mapping is relative
-// to the picture (like the scan, which stretches its values across the image).
+// to the picture (like the scan, which stretches its values across the image). A video is
+// sampled at eight moments spread through the part the music covers.
 function reference() {
   const lo = {}, hi = {}, keys = ['r', 'g', 'b', 'lum', 'detail'];
   for (const k of keys) { lo[k] = Infinity; hi[k] = -Infinity; }
-  for (let i = 0; i < 9; i++) for (let j = 0; j < 5; j++) {
-    const m = measure((i + 0.5) / 9, (j + 0.5) / 5);
+  const frames = spotVideo() ? Array.from({ length: 8 }, (_, f) => Math.floor((f + 0.5) * S.music.used / 8)) : [0];
+  for (const f of frames) for (let i = 0; i < 9; i++) for (let j = 0; j < 5; j++) {
+    const m = measure((i + 0.5) / 9, (j + 0.5) / 5, SPOT.radius, f);
     for (const k of keys) { lo[k] = Math.min(lo[k], m[k]); hi[k] = Math.max(hi[k], m[k]); }
   }
   return { lo, hi };
@@ -192,9 +210,10 @@ function fadeClip(clip, at, tc) {
 function fireBeat() {
   const ctx = S.ctx, scale = S.music.stemScale ?? 1;
   if (!R.ref) R.ref = reference();
-  const M = measure(R.focus.fx, R.focus.fy), N = normalise(M);
-  const { ev, sustain, beat, bar } = composeBeat(M, N);
   const when = Math.max(R.nextAt, ctx.currentTime + 0.02);
+  const frame = spotVideo() ? frameAt(spotTime(when)) : 0;   // video: the frame on screen when the beat sounds
+  const M = measure(R.focus.fx, R.focus.fy, SPOT.radius, frame), N = normalise(M);
+  const { ev, sustain, beat, bar } = composeBeat(M, N);
   R.beatClip = playClip(renderClip(ctx, ev, 0, beat, scale), when);
 
   if (sustain) {
@@ -213,7 +232,7 @@ function fireBeat() {
     }
   }
   R.nextAt = when + beat;
-  R.show = { M, N, st: R.st };
+  R.show = { M, N, st: R.st, frame };
   S.dirty = true;
 }
 
@@ -228,12 +247,14 @@ function startHover() {
   if (ctx.state === 'suspended') ctx.resume();
   R.hover = true; R.st = newState(); R.sustKey = ''; R.sustAt = -1e9;
   R.nextAt = ctx.currentTime + 0.05;
+  if (spotVideo()) { R.vt0 = Math.min(S.offset, S.music.used / S.proc.fps - 0.05); R.vtAt = ctx.currentTime; }   // carry on from the playhead
   R.timer = setInterval(tick, 25);
 }
 
 function reactiveEnd() {
   if (!R.hover) return;
   R.hover = false; clearInterval(R.timer); R.timer = null;
+  if (spotVideo() && S.music && S.ctx) S.offset = Math.min(spotTime(), S.music.beats * S.music.beat);   // the playhead stays where the video got to
   if (S.ctx) fadeClip(R.sustClip, S.ctx.currentTime, 0.4);   // let the last beat ring out, fade the long notes
   R.sustClip = R.beatClip = null; R.focus = null; R.show = null;
   S.dirty = true; lastReadout = '';
@@ -242,10 +263,14 @@ function reactiveEnd() {
 // ---------------------------------------------------------- showing it
 // the picture with everything outside the circle dimmed
 function drawSpotlight(cv) {
-  const x = cv.getContext('2d'), W = cv.width, H = cv.height, lw = Math.max(1, W / 600);
-  const cx = R.focus.fx * W, cy = R.focus.fy * H, r = SPOT.radius * H;
-  x.clearRect(0, 0, W, H);
-  x.drawImage(S.src, 0, 0, W, H);
+  const x = cv.getContext('2d'), W = cv.width, H = cv.height;
+  x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
+  if (!spotVideo() || S.src.readyState >= 2) x.drawImage(S.src, 0, 0, W, H);
+  spotMask(x, W, H);
+}
+// dim everything outside the circle and outline it (also used on a video's channel panels)
+function spotMask(x, W, H) {
+  const lw = Math.max(1, W / 600), cx = R.focus.fx * W, cy = R.focus.fy * H, r = SPOT.radius * H;
   x.fillStyle = 'rgba(0,0,0,.6)';
   x.beginPath(); x.rect(0, 0, W, H); x.arc(cx, cy, r, 0, TAU); x.fill('evenodd');
   x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = lw * 1.5;
@@ -266,14 +291,25 @@ function spotlightReadout() {
   $('oD').textContent = st.texture;
   $('cKey').textContent = st.sec.name + (st.sec.pent ? ', pentatonic' : '');
   $('cDrum').textContent = st.texture; $('cHarp').textContent = st.harp;
+  $('cMove').textContent = spotVideo() ? `${Math.round(Math.min(1, 10 * M.motion) * 100)}% inside the circle` : 'still image';
   $('cRhythm').textContent = st.rhythm; $('cMotion').textContent = st.motion;
-  $('tNow').textContent = 'live'; $('rBeat').textContent = (st.k - 1) % S.music.meter + 1; $('rBar').textContent = '–';
+  $('tNow').textContent = spotVideo() ? `live · ${fmt(spotTime())}` : 'live'; $('rBeat').textContent = (st.k - 1) % S.music.meter + 1; $('rBar').textContent = '–';
+}
+
+// with Follow cursor on, the caption explains it (the usual caption comes back when it is turned off);
+// media.js calls this after writing a new caption, so loading a file keeps the explanation
+function spotlightCaption() {
+  if (!R.on) return;
+  const cap = $('imgCaption');
+  R.savedCaption = cap.textContent;
+  cap.textContent = spotVideo()
+    ? 'Follow cursor is on: only the circle under the cursor is heard while the video plays on in a loop. Scroll to make it bigger or smaller; move off the video to stop.'
+    : 'Follow cursor is on: only the circle under the cursor is heard. Scroll to make it bigger or smaller.';
 }
 
 // ---------------------------------------------------------- wiring
 (() => {
-  const cv = $('imgCv'), box = $('reactive'), cap = $('imgCaption');
-  let savedCaption = null;
+  const cv = $('imgCv'), box = $('reactive');
   const pos = e => { const p = canvasPoint(cv, e); return { fx: clamp(p.fx, 0, 1), fy: clamp(p.fy, 0, 1), inside: p.inside }; };
   const move = e => {
     if (!R.on || !reactiveAllowed()) return;
@@ -298,11 +334,11 @@ function spotlightReadout() {
     cv.classList.toggle('reactive', R.on);
     if (R.on) {
       const ctx = ensureCtx(); if (ctx.state === 'suspended') ctx.resume();   // the click unlocks audio
-      savedCaption = cap.textContent;
-      cap.textContent = 'Follow cursor is on: only the circle under the cursor is heard. Scroll to make it bigger or smaller.';
+      spotlightCaption();
     } else {
       reactiveEnd();
-      if (savedCaption !== null) cap.textContent = savedCaption;
+      if (R.savedCaption !== null) $('imgCaption').textContent = R.savedCaption;
+      R.savedCaption = null;
     }
   });
 })();
