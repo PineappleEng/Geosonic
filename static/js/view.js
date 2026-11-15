@@ -185,10 +185,21 @@ function updateReadout(t) {
 
 // video mode: the current frame, with the strip the music is hearing highlighted (in whole-frame
 // mode the region is the full frame, so nothing is dimmed and the outline frames the picture)
-function drawVideo(cv, t) {
+// With ch (0 red, 1 green, 2 blue) it draws only that channel of the frame, for the channel panels,
+// marking what the music hears the same way (strip, whole frame or spotlight circle).
+const CHANNEL_FILL = ['#f00', '#0f0', '#00f'];
+function drawVideo(cv, t, ch = null) {
   const x = cv.getContext('2d'), W = cv.width, H = cv.height, m = S.music, v = S.src;
   x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
-  if (v.readyState >= 2) x.drawImage(v, 0, 0, W, H);
+  if (v.readyState >= 2) {
+    x.drawImage(v, 0, 0, W, H);
+    if (ch !== null) {   // multiplying by pure red (or green, or blue) keeps just that channel
+      x.globalCompositeOperation = 'multiply';
+      x.fillStyle = CHANNEL_FILL[ch]; x.fillRect(0, 0, W, H);
+      x.globalCompositeOperation = 'source-over';
+    }
+  }
+  if (R.hover && R.focus) { spotMask(x, W, H); return; }
   const i = Math.floor(t / m.beat);
   if (i < 0 || i >= m.beats) return;
   const [, , c, d] = m.beatRegions[i], sx = W / S.proc.k, lw = Math.max(1, W / 600);
@@ -225,9 +236,9 @@ function frame() {
     else if (cols) drawVideo($('imgCv'), t);
     else drawScan($('imgCv'), S.src, t, true);
     if (cols) drawScan($('timeCv'), S.proc.slit, t, true, cols);
-    drawScan($('cvR'), S.proc.chans[0], t, false, cols);
-    drawScan($('cvG'), S.proc.chans[1], t, false, cols);
-    drawScan($('cvB'), S.proc.chans[2], t, false, cols);
+    ['cvR', 'cvG', 'cvB'].forEach((id, k) => {   // a video's panels show the current frame, split into channels
+      if (cols) drawVideo($(id), t, k); else drawScan($(id), S.proc.chans[k], t, false);
+    });
     drawScore(t, C);
     if (R.hover) spotlightReadout(); else updateReadout(t);
     S.dirty = false;

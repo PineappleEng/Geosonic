@@ -162,7 +162,7 @@ for (const g of GROUPS) {
 function scrubbable(el, toTime) {
   let resume = false, down = false;
   el.addEventListener('pointerdown', e => {
-    if (!S.music || (el.id === 'imgCv' && (S.proc.kind === 'video' || R.on))) return;   // reactive mode: the cursor plays instead
+    if (!S.music || (S.proc.kind === 'video' && el.id !== 'timeCv') || (el.id === 'imgCv' && R.on)) return;   // a video jumps from its timeline; reactive mode: the cursor plays instead
     down = true; resume = S.playing; stop();
     el.setPointerCapture(e.pointerId);
     S.offset = toTime(e); S.dirty = true;

@@ -263,10 +263,14 @@ function reactiveEnd() {
 // ---------------------------------------------------------- showing it
 // the picture with everything outside the circle dimmed
 function drawSpotlight(cv) {
-  const x = cv.getContext('2d'), W = cv.width, H = cv.height, lw = Math.max(1, W / 600);
-  const cx = R.focus.fx * W, cy = R.focus.fy * H, r = SPOT.radius * H;
+  const x = cv.getContext('2d'), W = cv.width, H = cv.height;
   x.fillStyle = '#000'; x.fillRect(0, 0, W, H);
   if (!spotVideo() || S.src.readyState >= 2) x.drawImage(S.src, 0, 0, W, H);
+  spotMask(x, W, H);
+}
+// dim everything outside the circle and outline it (also used on a video's channel panels)
+function spotMask(x, W, H) {
+  const lw = Math.max(1, W / 600), cx = R.focus.fx * W, cy = R.focus.fy * H, r = SPOT.radius * H;
   x.fillStyle = 'rgba(0,0,0,.6)';
   x.beginPath(); x.rect(0, 0, W, H); x.arc(cx, cy, r, 0, TAU); x.fill('evenodd');
   x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = lw * 1.5;
