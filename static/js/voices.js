@@ -76,3 +76,97 @@ const ROLE_VOICES = {
   sparkle:  ['celesta', 'music_box', 'glass', 'vibraphone', 'kalimba'],
   texture:  ['air', 'ocean', 'rain'],
 };
+
+// Presets de género / ambiente: combinaciones equilibradas por timbre y rango de frecuencia
+const AMBIENT_PRESETS = [
+  {
+    id: 'orbital',
+    name: 'Orbital Chill',
+    desc: 'Suave, atmosférico y equilibrado (por defecto)',
+    voices: {
+      melody: 'felt_piano',
+      harmony: 'flute',
+      strings: 'warm_pad',
+      drone: 'soft_drone',
+      bass: 'sub_bass',
+      arpeggio: 'harp',
+      bells: 'celesta',
+      drums: 'air'
+    }
+  },
+  {
+    id: 'chamber',
+    name: 'Chamber Orchestra',
+    desc: 'Cuerdas, maderas y acústica clásica de cámara',
+    voices: {
+      melody: 'harp',
+      harmony: 'cello',
+      strings: 'string_pad',
+      drone: 'string_pad',
+      bass: 'cello_bass',
+      arpeggio: 'nylon_guitar',
+      bells: 'celesta',
+      drums: 'air'
+    }
+  },
+  {
+    id: 'ethereal',
+    name: 'Ethereal Cathedral',
+    desc: 'Coros, órgano suave y campanas de cristal',
+    voices: {
+      melody: 'glass',
+      harmony: 'choir',
+      strings: 'choir_pad',
+      drone: 'organ',
+      bass: 'sub_bass',
+      arpeggio: 'celesta',
+      bells: 'glass',
+      drums: 'air'
+    }
+  },
+  {
+    id: 'lofi',
+    name: 'Lo-Fi Rainy Jazz',
+    desc: 'Piano eléctrico Rhodes, contrabajo y lluvia suave',
+    voices: {
+      melody: 'rhodes',
+      harmony: 'clarinet',
+      strings: 'warm_pad',
+      drone: 'soft_drone',
+      bass: 'upright',
+      arpeggio: 'vibraphone',
+      bells: 'music_box',
+      drums: 'rain'
+    }
+  },
+  {
+    id: 'tropical',
+    name: 'Coastal Acoustic',
+    desc: 'Percusión de madera, guitarra y olas del mar',
+    voices: {
+      melody: 'marimba',
+      harmony: 'ocarina',
+      strings: 'glass_pad',
+      drone: 'soft_drone',
+      bass: 'upright',
+      arpeggio: 'kalimba',
+      bells: 'kalimba',
+      drums: 'ocean'
+    }
+  },
+  {
+    id: 'synth',
+    name: 'Deep Space Synth',
+    desc: 'Texturas electrónicas cálidas y bajo sintetizado',
+    voices: {
+      melody: 'vibraphone',
+      harmony: 'choir',
+      strings: 'glass_pad',
+      drone: 'organ',
+      bass: 'synth_bass',
+      arpeggio: 'rhodes',
+      bells: 'glass',
+      drums: 'air'
+    }
+  }
+];
