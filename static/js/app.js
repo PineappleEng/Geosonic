@@ -13,7 +13,7 @@ async function rebuild() {
   const keys = [...new Set(m.sections.map(s => s.name))];
   const video = S.proc.kind === 'video', secs = `${m.bars} bars and ${m.nSec} section${m.nSec > 1 ? 's' : ''} of up to 4 bars`;
   $('d3').textContent = video
-    ? `The video becomes ${m.beats} beats in ${m.meter}/4 (${fmt(m.beats * m.beat)} of its ${fmt(S.proc.duration)}), grouped into ${secs}. Each beat hears the frames shown during it, through a strip that sweeps across the frame once per section.`
+    ? `The video becomes ${m.beats} beats in ${m.meter}/4 (${fmt(m.beats * m.beat)} of its ${fmt(S.proc.duration)}), grouped into ${secs}. Each beat hears the frames shown during it, ${S.videoScan === 'frame' ? 'across the whole frame' : 'through a strip that sweeps across the frame once per section'}.`
     : `${m.beats} slices become ${m.beats} beats in ${m.meter}/4, grouped into ${secs}.`;
   describeBand();
   $('tTot').textContent = fmt(m.total);
@@ -189,6 +189,14 @@ document.addEventListener('keydown', e => {
 });
 $('beats').addEventListener('change', e => { S.beats = +e.target.value; rebuild(); });
 $('bpm').addEventListener('input', e => { $('bpmVal').textContent = e.target.value; });
+// video scan mode: switching re-reads the same frames and recomposes
+for (const radio of document.querySelectorAll('input[name="scanMode"]')) {
+  radio.addEventListener('change', e => {
+    if (!e.target.checked) return;
+    S.videoScan = e.target.value;
+    if (S.proc?.kind === 'video') { videoCaption(); rebuild(); }
+  });
+}
 $('bpm').addEventListener('change', e => { S.bpm = +e.target.value; rebuild(); });
 $('volume').addEventListener('input', e => {
   $('volumeVal').textContent = e.target.value;

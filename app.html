@@ -43,6 +43,15 @@
       <input type="range" id="bpm" min="40" max="120" step="2" value="60">
       <span class="num" id="bpmVal">60</span><span class="lbl">BPM</span>
     </div>
+    <div class="group" id="scanModeGroup" role="radiogroup" aria-labelledby="scanModeLbl" hidden>
+      <span class="lbl" id="scanModeLbl">Video scan</span>
+      <div class="seg">
+        <input type="radio" name="scanMode" id="scanSweep" value="sweep" class="sr-only" checked>
+        <label for="scanSweep" title="A strip sweeps across the frame once per section">Sweeping strip</label>
+        <input type="radio" name="scanMode" id="scanFrame" value="frame" class="sr-only">
+        <label for="scanFrame" title="Every beat hears the whole frame">Whole frame</label>
+      </div>
+    </div>
     <div class="group">
       <label for="volume">Volume</label>
       <input type="range" id="volume" min="0" max="100" step="1" value="80">

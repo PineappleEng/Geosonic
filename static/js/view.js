@@ -183,7 +183,8 @@ function updateReadout(t) {
   for (const row of mixer.children) row.classList.toggle('on', !!sounding[row.dataset.group]);
 }
 
-// video mode: the current frame, with the strip the music is hearing highlighted
+// video mode: the current frame, with the strip the music is hearing highlighted (in whole-frame
+// mode the region is the full frame, so nothing is dimmed and the outline frames the picture)
 function drawVideo(cv, t) {
   const x = cv.getContext('2d'), W = cv.width, H = cv.height, m = S.music, v = S.src;
   x.fillStyle = '#000'; x.fillRect(0, 0, W, H);

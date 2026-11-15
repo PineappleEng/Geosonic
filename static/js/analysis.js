@@ -20,10 +20,11 @@ function analyse(beatsReq) {
   const bb = bounds(U, beats), gb = bounds(U, bars), sb = [];
   for (let s = 0; s <= nSec; s++) sb.push(gb[Math.min(bars, s * SECTION_BARS)]);
 
-  // columns each beat looks at: image = its own column; video = a strip sweeping across the frame per section
+  // columns each beat looks at: image = its own column; video = either a strip sweeping across the
+  // frame once per section (S.videoScan 'sweep'), or the whole frame every beat ('frame')
   const sectionBeats = s => (Math.min(bars, (s + 1) * SECTION_BARS) - s * SECTION_BARS) * meter;
   const strip = (first, nb) => {
-    if (!video) return [0, k];
+    if (!video || S.videoScan === 'frame') return [0, k];
     const s = Math.floor(first / (SECTION_BARS * meter)), j = first - s * SECTION_BARS * meter, cb = bounds(k, sectionBeats(s));
     return [cb[j], cb[j + nb]];
   };
@@ -53,17 +54,19 @@ function analyse(beatsReq) {
   const motion = r => { if (!video || U < 2) return 0; let s = 0; each(r, (i, y, j) => { s += Math.abs(p.lum[i] - p.lum[j]); }); return s / count(r); };
   let cm = 0; each([0, U, 0, k], i => { cm += p.chroma[i]; }); cm /= U * h * k;
 
+  // whole-frame video changes slowly and subtly, so even small colour drifts are stretched into music
+  const minRange = video && S.videoScan === 'frame' ? 0.002 : 0.02;
   const light = per(beatRegions, mean(p.lum));
   return {
     meter, beats, bars, nSec, aspect: p.aspect, bb, gb, U, used, beatRegions,
     swing: clamp((cm - 0.05) * 0.5, 0, 0.1),
-    red: stretch(per(beatRegions, mean(p.r))),
+    red: stretch(per(beatRegions, mean(p.r)), minRange),
     blue: per(beatRegions, mean(p.b)),
     light, restLevel: Math.min(0.04, 0.5 * median(light)),
     detail: per(beatRegions, std(p.lum)).map(v => Math.min(1, 4 * v)),
     motion: per(beatRegions, motion),
     centroid: per(beatRegions, centroid),
-    green: stretch(per(barRegions, mean(p.g))),
+    green: stretch(per(barRegions, mean(p.g)), minRange),
     blueStd: per(barRegions, std(p.b)),
     secLight: per(secRegions, mean(p.lum)), secChroma: per(secRegions, mean(p.chroma)), secHue: per(secRegions, hueMean),
   };
