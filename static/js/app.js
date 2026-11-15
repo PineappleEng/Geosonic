@@ -120,7 +120,7 @@ $('volume').addEventListener('input', e => {
   if (S.graph) setGain(S.graph.out.gain, S.volume);
 });
 $('reverb').addEventListener('change', e => { S.reverb = e.target.checked; if (S.graph) setGain(S.graph.wet.gain, S.reverb ? 0.75 : 0); });
-$('sampleBtn').addEventListener('click', () => processImage(sampleImage(), 'Sample image (generated nebula)'));
+$('sampleBtn').addEventListener('click', () => processImage(sampleImage(), 'Sample image (generated view of Earth from orbit)'));
 $('fileLbl').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } });
 
 function loadFile(file) {
@@ -142,5 +142,5 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', (
 new MutationObserver(() => { S.dirty = true; }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 
-processImage(sampleImage(), 'Sample image (generated nebula)');
+processImage(sampleImage(), 'Sample image (generated view of Earth from orbit)');
 requestAnimationFrame(frame);

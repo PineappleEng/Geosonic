@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Image Sonifier</title>
+<title>Hearing Earth · Listen</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,15 +13,15 @@
 <body>
 <div class="wrap">
   <nav class="topbar" aria-label="Site">
-    <a class="brand" href="index.html">Image Sonifier</a>
-    <a class="navlink" href="index.html#how">How it works</a>
+    <a class="brand" href="index.html">Hearing Earth</a>
+    <a class="navlink" href="index.html#why">Why sound?</a>
   </nav>
 
   <!-- 1. Upload and controls -->
   <section class="panel controls" aria-label="Upload and controls">
     <div class="group">
       <input type="file" id="file" accept="image/*,video/webm,video/*" class="sr-only">
-      <label for="file" class="btn" id="fileLbl" tabindex="0" role="button">Open image or video…</label>
+      <label for="file" class="btn" id="fileLbl" tabindex="0" role="button">Open a photo or video of Earth…</label>
       <button class="btn" id="sampleBtn" type="button">Use sample</button>
     </div>
     <button class="btn play" id="playBtn" type="button" disabled>
@@ -57,14 +57,14 @@
 
   <!-- 2. The image or video, with its three channels on the right -->
   <section class="panel" aria-labelledby="scanTitle">
-    <h2 id="scanTitle">Image scan</h2>
+    <h2 id="scanTitle">View from orbit</h2>
     <div class="scan-grid">
       <div class="scan-main">
         <div class="drop" id="drop">
-          <canvas id="imgCv" width="800" height="450" aria-label="Source image or video with the current scan slice"></canvas>
+          <canvas id="imgCv" width="800" height="450" aria-label="Photo or video of Earth from space, with the slice being played highlighted"></canvas>
         </div>
         <canvas id="timeCv" width="1200" height="90" hidden aria-label="Video timeline: each column is one moment of the video"></canvas>
-        <p class="caption" id="imgCaption">Click or drag on the image to jump to a slice. You can also drop an image or video file here.</p>
+        <p class="caption" id="imgCaption">Click or drag on the image to jump to a slice. You can also drop a photo or video of Earth taken from space here.</p>
       </div>
       <div class="channels" aria-label="Colour channels">
         <figure><canvas id="cvR" width="64" height="36"></canvas><figcaption><b><span class="sw r"></span>Red channel</b><span>melody and harmony</span></figcaption></figure>
