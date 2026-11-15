@@ -68,7 +68,8 @@ function play() {
   if (!S.stems) return;
   const ctx = ensureCtx();
   if (ctx.state === 'suspended') ctx.resume();
-  if (S.offset >= S.music.total - 0.05) S.offset = 0;
+  // past the last beat only the reverb tail is left, and pausing cuts that, so start over
+  if (S.offset >= S.music.beats * S.music.beat - 0.05) S.offset = 0;
   const when = ctx.currentTime + 0.03;
   S.nodes = [];
   for (const [gid, buf] of Object.entries(S.stems)) {
