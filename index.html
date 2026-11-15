@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Image Sonifier</title>
+<title>Hearing Earth</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Turn any picture or video into slow, peaceful ambient music, right in your browser.">
+<meta name="description" content="Listen to photographs of Earth taken from space: oceans, forests, clouds and city lights turned into music, so blind and sighted people can experience them together.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Sora:wght@500;600;700&display=swap">
@@ -15,19 +15,19 @@
 <body>
 <div class="wrap landing">
   <nav class="topbar" aria-label="Site">
-    <a class="brand" href="index.html">Image Sonifier</a>
+    <a class="brand" href="index.html">Hearing Earth</a>
     <a class="navlink" href="app.html">Open the app</a>
   </nav>
 
   <header class="hero">
     <div class="hero-text">
-      <h1>Hear what a picture sounds like.</h1>
-      <p class="lede">Image Sonifier scans a picture from left to right, or a video as it plays, and composes slow, peaceful ambient music from its colours, light and detail. Every note can be traced back to the pixels that made it.</p>
+      <h1>Hear the Earth from orbit.</h1>
+      <p class="lede">Hearing Earth turns photographs of our planet taken from space into slow, peaceful music. It sweeps across a picture from left to right, or through a video as it plays, so oceans, forests, deserts, clouds and the lights of cities each have a sound of their own. That gives people who are blind or have low vision a way into images that are usually only seen.</p>
       <div class="cta">
-        <a class="btn play" href="app.html">Try it</a>
-        <a class="btn" href="#how">How it works</a>
+        <a class="btn play" href="app.html">Listen to Earth</a>
+        <a class="btn" href="#why">Why sound?</a>
       </div>
-      <p class="fineprint">Works with PNG and JPEG images and WebM or MP4 videos. Everything runs in your browser; nothing is uploaded.</p>
+      <p class="fineprint">Works with PNG and JPEG photos and WebM or MP4 videos, such as astronaut photos or time-lapses filmed from orbit. Everything runs in your browser; nothing is uploaded.</p>
     </div>
     <figure class="hero-art" aria-hidden="true">
       <svg viewBox="0 0 560 220" role="img">
@@ -64,9 +64,46 @@
         <rect class="n-r" x="418" y="44" width="62" height="9" rx="3"/><rect class="n-r" x="484" y="56" width="56" height="9" rx="3"/>
         <circle class="n-l" cx="452" cy="32" r="4"/>
       </svg>
-      <figcaption>Each slice of the picture becomes one beat of music.</figcaption>
+      <figcaption>Each slice of the view from orbit becomes one beat of music.</figcaption>
     </figure>
   </header>
+
+  <section id="why" class="section" aria-labelledby="whyTitle">
+    <h2 id="whyTitle" class="section-title">Seeing Earth from space, without seeing</h2>
+    <p class="section-lede">Most of what people know about how Earth looks from orbit comes from pictures: the blue marble, hurricanes from above, the planet's night side lit up by cities. For blind and low-vision people, those pictures usually come down to one sentence of alt text. Sound can carry far more of the picture.</p>
+    <ul class="why">
+      <li>
+        <h3>The layout becomes time</h3>
+        <p>The picture is played from left to right, so what you hear first is on the left and what you hear last is on the right. You can tell where the coastline is, where a storm starts and stops, and where day turns into night.</p>
+      </li>
+      <li>
+        <h3>The same colours always sound the same</h3>
+        <p>Blue ocean always brings in the flowing arpeggio, green land the warm chords, and bright cloud and ice a lighter mode with sparkles. Black space is close to silence. After a few photos, listeners start to recognise what is below just from the sound.</p>
+      </li>
+      <li>
+        <h3>Feeling, not just facts</h3>
+        <p>A caption says "Hurricane over the Atlantic". The sound adds how big the storm is, how bright and busy its clouds are, and the calm ocean around it. Hearing it alongside a spoken description gives a fuller picture than either one on its own.</p>
+      </li>
+      <li>
+        <h3>Something to share</h3>
+        <p>Blind and sighted people can hear the same photo at the same time, in a classroom, a museum or at home, and talk about what they each notice. Turning space data into sound is a way to make science open to more people, not only those who can see a screen.</p>
+      </li>
+    </ul>
+    <p class="note">Sound works best alongside a spoken description, not as a replacement for one. At the moment, Space starts and pauses the music, but jumping to a spot in the picture needs a mouse or touch.</p>
+  </section>
+
+  <section class="section" aria-labelledby="earthTitle">
+    <h2 id="earthTitle" class="section-title">What Earth sounds like</h2>
+    <p class="section-lede">A listening guide to the main things you'll find in a photo taken from orbit.</p>
+    <dl class="drives">
+      <div><dt><span class="sw b"></span>Oceans and lakes</dt><dd>Deep blue makes the arpeggio louder and more flowing, so open water sounds like gentle, rolling motion under the melody.</dd></div>
+      <div><dt><span class="sw g"></span>Forests and farmland</dt><dd>Green picks the chords, so wide areas of vegetation are heard as slow, warm changes in the harmony.</dd></div>
+      <div><dt><span class="sw r"></span>Deserts and red rock</dt><dd>Reds and ochres push the melody higher, so the Sahara or the Australian outback sings above the land around it.</dd></div>
+      <div><dt><span class="sw l"></span>Clouds, ice and snow</dt><dd>Bright white moves the music into a brighter mode and adds high sparkles; a polar ice cap or a thick bank of cloud sounds open and shining.</dd></div>
+      <div><dt><span class="sw d"></span>Storms, mountains and coastlines</dt><dd>Lots of fine detail makes the melody busier and the texture stronger, so the swirl of a hurricane or a jagged coast sounds more restless than calm sea.</dd></div>
+      <div><dt><span class="sw shape"></span>Space and the night side</dt><dd>Darkness brings rests and a gentle minor mode. The black of space around the planet is close to silence, and city lights at night come through as scattered bright notes.</dd></div>
+    </dl>
+  </section>
 
   <section id="how" class="section" aria-labelledby="howTitle">
     <h2 id="howTitle" class="section-title">How it works</h2>
@@ -111,11 +148,11 @@
   </section>
 
   <section class="closing">
-    <h2>Start with the sample nebula, or bring your own picture.</h2>
-    <a class="btn play" href="app.html">Try it</a>
+    <h2>Start with the sample view of Earth, or bring your own photo from orbit.</h2>
+    <a class="btn play" href="app.html">Listen to Earth</a>
   </section>
 
-  <footer>Image Sonifier runs entirely in your browser. Images and videos you open are never uploaded.</footer>
+  <footer>Hearing Earth runs entirely in your browser. Photos and videos you open are never uploaded. Space agencies publish many photos and videos of Earth taken from orbit that you can try.</footer>
 </div>
 
 <script src="static/js/constants.js"></script>

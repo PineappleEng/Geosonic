@@ -29,7 +29,7 @@ function showMode(kind) {
   const video = kind === 'video';
   $('timeCv').hidden = !video;
   $('imgCv').classList.toggle('video', video);
-  $('scanTitle').textContent = video ? 'Video scan' : 'Image scan';
+  $('scanTitle').textContent = video ? 'Video from orbit' : 'View from orbit';
   $('beats').disabled = video; $('beatsNote').hidden = !video;
 }
 
@@ -53,7 +53,7 @@ function processImage(img, label) {
   const dv = $('imgCv'), ds = Math.min(1, 1200 / iw);
   dv.width = Math.max(1, Math.round(iw * ds)); dv.height = Math.max(1, Math.round(ih * ds));
   for (const id of ['cvR', 'cvG', 'cvB']) { $(id).width = w; $(id).height = h; }
-  $('imgCaption').textContent = `${label} · click or drag on the image to jump to a slice. You can also drop an image or video file here.`;
+  $('imgCaption').textContent = `${label} · click or drag on the image to jump to a slice. You can also drop a photo or video of Earth taken from space here.`;
   $('d1').textContent = `${iw} × ${ih} px image, analysed at ${w} × ${h} px.`;
   rebuild();
 }
@@ -148,25 +148,84 @@ async function processVideo(file) {
 
 
 // ---------------------------------------------------------- sample image
+// A generated view of Earth from orbit. Read left to right it moves from daylit ocean, land and
+// cloud, across the line between day and night, to the dark night side with scattered city lights.
 function sampleImage() {
-  const c = document.createElement('canvas'); c.width = 800; c.height = 450;
+  const W = 800, H = 450, c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d'), rnd = mulberry32(7);
-  x.fillStyle = '#05060c'; x.fillRect(0, 0, 800, 450);
-  x.globalCompositeOperation = 'lighter';
-  const blobs = [
-    [110, 260, 240, '255,70,90'], [300, 130, 210, '70,220,140'], [470, 300, 250, '60,110,255'],
-    [640, 160, 210, '255,110,220'], [400, 240, 140, '255,200,90'], [740, 330, 170, '90,230,255'],
-  ];
-  for (const [cx, cy, r, col] of blobs) {
-    const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
-    g.addColorStop(0, `rgba(${col},.85)`); g.addColorStop(0.45, `rgba(${col},.28)`); g.addColorStop(1, `rgba(${col},0)`);
-    x.fillStyle = g; x.fillRect(0, 0, 800, 450);
+  const CX = 400, CY = 820, R = 700;                  // planet: its limb arcs across the upper frame
+  const onPlanet = (px, py) => (px - CX) ** 2 + (py - CY) ** 2 < R * R;
+
+  // space and stars
+  x.fillStyle = '#03040a'; x.fillRect(0, 0, W, H);
+  for (let i = 0; i < 260; i++) {
+    const px = rnd() * W, py = rnd() * H;
+    if (onPlanet(px, py)) continue;
+    x.fillStyle = `rgba(255,255,255,${0.25 + rnd() * 0.6})`;
+    x.fillRect(px, py, rnd() < 0.95 ? 1 : 2, rnd() < 0.95 ? 1 : 2);
   }
-  for (let i = 0; i < 600; i++) {
-    x.fillStyle = `rgba(255,255,255,${0.3 + rnd() * 0.7})`;
-    const s = rnd() < 0.95 ? 1 : 2.5;
-    x.fillRect(rnd() * 800, rnd() * 450, s, s);
+
+  x.save();
+  x.beginPath(); x.arc(CX, CY, R, 0, Math.PI * 2); x.clip();
+
+  // ocean, lighter where the sun is high (upper left)
+  const sea = x.createRadialGradient(180, 260, 40, 300, 500, 700);
+  sea.addColorStop(0, '#2f78c4'); sea.addColorStop(0.5, '#164f94'); sea.addColorStop(1, '#0a2a5c');
+  x.fillStyle = sea; x.fillRect(0, 0, W, H);
+
+  // land: clusters of overlapping soft discs, green forest and ochre desert
+  const land = (cx, cy, spread, n, cols) => {
+    for (let i = 0; i < n; i++) {
+      const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * spread;
+      const px = cx + Math.cos(a) * d * 1.4, py = cy + Math.sin(a) * d * 0.7, r = 10 + rnd() * 26;
+      x.fillStyle = cols[Math.floor(rnd() * cols.length)];
+      x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fill();
+    }
+  };
+  land(150, 330, 70, 70, ['#3f7a3a', '#2f6a32', '#557f3c']);
+  land(390, 250, 80, 80, ['#c59a5a', '#b5803f', '#d2ae72', '#8f8a46']);
+  land(470, 370, 60, 50, ['#3d6f35', '#5c7d3e']);
+  land(660, 300, 90, 90, ['#4a6b3a', '#7a6a40', '#3c5f33']);
+
+  // clouds: soft white wisps, and a storm spiral over the ocean
+  for (let i = 0; i < 70; i++) {
+    const px = rnd() * W, py = 140 + rnd() * 310, rx = 20 + rnd() * 60, ry = 6 + rnd() * 14;
+    const g = x.createRadialGradient(px, py, 0, px, py, rx);
+    g.addColorStop(0, 'rgba(255,255,255,0.75)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = g; x.beginPath(); x.ellipse(px, py, rx, ry, rnd() * 0.6 - 0.3, 0, Math.PI * 2); x.fill();
   }
-  x.globalCompositeOperation = 'source-over';
+  x.strokeStyle = 'rgba(255,255,255,0.7)'; x.lineCap = 'round';
+  for (let arm = 0; arm < 3; arm++) {
+    x.lineWidth = 9 - arm * 2; x.beginPath();
+    for (let t = 0; t < 5.5; t += 0.05) {
+      const a = t + arm * 2.1, r = 4 + t * 11;
+      const px = 255 + Math.cos(a) * r, py = 225 + Math.sin(a) * r * 0.6;
+      t === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+    }
+    x.stroke();
+  }
+
+  // night side: darken past the terminator, then scatter city lights over the land
+  const night = x.createLinearGradient(500, 0, 640, 0);
+  night.addColorStop(0, 'rgba(2,3,8,0)'); night.addColorStop(1, 'rgba(2,3,8,0.94)');
+  x.fillStyle = night; x.fillRect(0, 0, W, H);
+  for (let i = 0; i < 220; i++) {
+    const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * 90;
+    const px = 660 + Math.cos(a) * d * 1.4, py = 300 + Math.sin(a) * d * 0.7;
+    if (px < 600 || !onPlanet(px, py)) continue;
+    x.fillStyle = `rgba(255,${200 + Math.floor(rnd() * 40)},120,${0.5 + rnd() * 0.5})`;
+    x.fillRect(px, py, rnd() < 0.85 ? 1.5 : 3, rnd() < 0.85 ? 1.5 : 3);
+  }
+  x.restore();
+
+  // thin blue atmosphere along the limb, fading out on the night side
+  const air = x.createLinearGradient(0, 0, W, 0);
+  air.addColorStop(0, 'rgba(120,180,255,0.9)'); air.addColorStop(0.62, 'rgba(120,180,255,0.7)'); air.addColorStop(0.82, 'rgba(120,180,255,0)');
+  x.strokeStyle = air;
+  for (const [lw, a] of [[14, 0.18], [6, 0.45], [2, 1]]) {
+    x.globalAlpha = a; x.lineWidth = lw;
+    x.beginPath(); x.arc(CX, CY, R + lw / 2, 0, Math.PI * 2); x.stroke();
+  }
+  x.globalAlpha = 1;
   return c;
 }
