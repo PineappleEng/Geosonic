@@ -9,6 +9,20 @@ const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2,
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const mod = (a, n) => ((a % n) + n) % n;
 
+// Where a pointer event falls on a canvas's picture, as fractions 0..1 of its width and height.
+// With `object-fit: contain` the picture is shrunk to fit and centred, so the element's box can
+// include empty bands; those are left out. `inside` is false over a band or outside the picture.
+function canvasPoint(el, e) {
+  const r = el.getBoundingClientRect();
+  let w = r.width, h = r.height;
+  if (getComputedStyle(el).objectFit === 'contain' && el.width && el.height) {
+    const a = el.width / el.height;
+    if (w / h > a) w = h * a; else h = w / a;
+  }
+  const fx = (e.clientX - (r.left + (r.width - w) / 2)) / w, fy = (e.clientY - (r.top + (r.height - h) / 2)) / h;
+  return { fx, fy, inside: fx >= 0 && fx <= 1 && fy >= 0 && fy <= 1 };
+}
+
 
 function mulberry32(a) {
   return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };

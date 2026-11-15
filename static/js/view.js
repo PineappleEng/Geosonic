@@ -215,12 +215,13 @@ function frame() {
     const t = now(), C = colors();
     const cols = S.proc.kind === 'video' ? S.music.used : 0;
     if (cols) { drawVideo($('imgCv'), t); drawScan($('timeCv'), S.proc.slit, t, true, cols); }
+    else if (R.hover && R.focus) drawSpotlight($('imgCv'));   // spotlight mode: only the circle is heard
     else drawScan($('imgCv'), S.src, t, true);
     drawScan($('cvR'), S.proc.chans[0], t, false, cols);
     drawScan($('cvG'), S.proc.chans[1], t, false, cols);
     drawScan($('cvB'), S.proc.chans[2], t, false, cols);
     drawScore(t, C);
-    updateReadout(t);
+    if (R.hover) spotlightReadout(); else updateReadout(t);
     S.dirty = false;
   }
   requestAnimationFrame(frame);

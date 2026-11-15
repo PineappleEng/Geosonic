@@ -32,6 +32,9 @@ function showMode(kind) {
   $('scanTitle').textContent = video ? 'Video from orbit' : 'View from orbit';
   $('beats').disabled = video; $('beatsNote').hidden = !video;
   $('scanModeGroup').hidden = !video;
+  const rx = $('reactive');   // reactive mode follows the cursor over a still image only
+  rx.disabled = video;
+  if (video && rx.checked) { rx.checked = false; rx.dispatchEvent(new Event('change')); }
 }
 // the caption under a video explains what the music is hearing in the chosen scan mode
 function videoCaption() {

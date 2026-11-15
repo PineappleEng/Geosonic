@@ -5,6 +5,7 @@
 async function rebuild() {
   if (!S.proc) return;
   const job = ++S.job;
+  reactiveEnd();
   stop();
   S.offset = 0;
   S.music = compose();
@@ -161,7 +162,7 @@ for (const g of GROUPS) {
 function scrubbable(el, toTime) {
   let resume = false, down = false;
   el.addEventListener('pointerdown', e => {
-    if (!S.music || (el.id === 'imgCv' && S.proc.kind === 'video')) return;
+    if (!S.music || (el.id === 'imgCv' && (S.proc.kind === 'video' || R.on))) return;   // reactive mode: the cursor plays instead
     down = true; resume = S.playing; stop();
     el.setPointerCapture(e.pointerId);
     S.offset = toTime(e); S.dirty = true;
@@ -171,8 +172,7 @@ function scrubbable(el, toTime) {
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
 }
 function imageTime(e) {
-  const r = e.currentTarget.getBoundingClientRect(), m = S.music;
-  const px = clamp((e.clientX - r.left) / r.width, 0, 0.9999) * m.U;
+  const m = S.music, px = clamp(canvasPoint(e.currentTarget, e).fx, 0, 0.9999) * m.U;
   let i = 0; while (i < m.beats - 1 && m.bb[i + 1] <= px) i++;
   return (i + (px - m.bb[i]) / (m.bb[i + 1] - m.bb[i])) * m.beat;
 }
