@@ -27,7 +27,7 @@ function drawScan(cv, source, t, showGrid, cols) {
       x.fillRect(Math.round(m.bb[i] * sx), 0, sectionEdge ? lw * 2 : lw, H);
     }
   }
-  const started = S.playing || S.offset > 0, sl = sliceAt(t);
+  const started = S.playing || S.offset > 0 || S.exporting, sl = sliceAt(t);
   const px = sl ? sl.x * sx : (t > 0 ? W : 0);
   if (started && px < W) { x.fillStyle = 'rgba(0,0,0,.45)'; x.fillRect(px, 0, W - px, H); }
   if (sl) {
@@ -227,9 +227,9 @@ function syncVideo(t) {
 }
 
 function frame() {
-  if (S.music && S.proc) syncVideo(now());
+  if (S.music && S.proc && !S.exporting) syncVideo(now());
   const spot = R.hover && R.focus;
-  if (S.music && (S.playing || S.dirty || (spot && S.proc.kind === 'video'))) {
+  if (!S.exporting && S.music && (S.playing || S.dirty || (spot && S.proc.kind === 'video'))) {
     const cols = S.proc.kind === 'video' ? S.music.used : 0;
     const t = spot && cols ? spotTime() : now(), C = colors();   // a video under the spotlight keeps moving
     if (spot) drawSpotlight($('imgCv'));   // spotlight mode: only the circle is heard
