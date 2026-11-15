@@ -31,6 +31,9 @@ function showMode(kind) {
   $('imgCv').classList.toggle('video', video);
   $('scanTitle').textContent = video ? 'Video from orbit' : 'View from orbit';
   $('beats').disabled = video; $('beatsNote').hidden = !video;
+  const rx = $('reactive');   // reactive mode follows the cursor over a still image only
+  rx.disabled = video;
+  if (video && rx.checked) { rx.checked = false; rx.dispatchEvent(new Event('change')); }
 }
 
 function processImage(img, label) {

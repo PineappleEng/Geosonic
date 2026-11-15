@@ -192,3 +192,31 @@ function renderStems(m, only = null) {
   for (const b of bufs) for (let c = 0; c < 2; c++) { const ch = b.getChannelData(c); for (let i = 0; i < len; i++) ch[i] *= k; }
   return stems;
 }
+
+// Render a few events (reactive mode) into short stereo AudioBuffers, one per group, with time
+// measured from t0. Same instruments, echoes and mix level (`scale`) as the full render.
+function renderClip(ctx, events, t0, beat, scale) {
+  let end = 0;
+  for (const e of events) end = Math.max(end, e.start - t0 + (e.dur || 0.6) + (ECHO[e.layer] ? ECHO[e.layer][0] * ECHO[e.layer][2] * beat : 0));
+  const len = Math.floor((end + 4) * SR), rnd = mulberry32(0), bufs = {};
+  const place = (gid, sig, start, gain, pan) => {
+    const th = (pan + 1) * Math.PI / 4, gl = scale * gain * Math.cos(th), gr = scale * gain * Math.sin(th);
+    const s0 = Math.max(0, Math.floor((start - t0) * SR)), n = Math.min(sig.length, len - s0);
+    if (n <= 0) return;
+    const b = bufs[gid] || (bufs[gid] = ctx.createBuffer(2, len, SR));
+    const L = b.getChannelData(0), R = b.getChannelData(1);
+    for (let i = 0; i < n; i++) { L[s0 + i] += gl * sig[i]; R[s0 + i] += gr * sig[i]; }
+  };
+  for (const e of events) {
+    const gid = GROUP_OF[e.layer], v = voiceFor(gid), f = e.midi != null ? mtof(e.midi) : 0;
+    if (e.layer === 'harm') { place(gid, playLine(v, [e]), e.start, e.gain * levelFor(v, gid), e.pan); continue; }
+    const sig = e.layer === 'swell' ? swell(f, e.dur, rnd) : ENGINES[v.engine](v, f, e.dur, rnd);
+    const gain = e.gain * (e.layer === 'swell' ? 1 : levelFor(v, gid));
+    place(gid, sig, e.start, gain, e.pan);
+    if (ECHO[e.layer]) {
+      const [delay, fb, repeats] = ECHO[e.layer];
+      for (let k = 1; k <= repeats; k++) { const sgn = k % 2 ? -1 : 1; place(gid, sig, e.start + k * delay * beat, gain * fb ** k, e.pan * sgn - 0.3 * sgn); }
+    }
+  }
+  return bufs;
+}
