@@ -253,7 +253,7 @@ function drawVideoOverlay(cv, t) {
   x.strokeStyle = 'rgba(255,255,255,.95)'; x.lineWidth = lw * 2; x.strokeRect(c * sx + lw, lw, (d - c) * sx - 2 * lw, H - 2 * lw);
 }
 
-function drawExportFrame(cv, t) {
+function drawExportFrame(cv, t, frameConfirmed = false) {
   const m = S.music;
   const W = cv.width, H = cv.height;
   const ctx = cv.getContext('2d');
@@ -268,7 +268,7 @@ function drawExportFrame(cv, t) {
     }
     const snapCtx = _exportVideoSnapshot.getContext('2d');
 
-    if (v && v.readyState >= 2) {
+    if (v && v.readyState >= 2 && frameConfirmed) {
       ctx.drawImage(v, 0, 0, W, H);
       snapCtx.drawImage(v, 0, 0, W, H);
     } else {
@@ -283,6 +283,113 @@ function drawExportFrame(cv, t) {
   drawVideoHud(cv, t);
 }
 
+function waitForAnimationFrame() {
+  return new Promise(resolve => requestAnimationFrame(resolve));
+}
+
+async function seekVideoFrame(v, target, fps) {
+  const tolerance = Math.max(0.02, 1 / fps);
+  const clamped = Math.max(0, Math.min(target, Math.max(0, v.duration - 0.02)));
+  const timeoutMs = 900;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (v.readyState >= 2 && !v.seeking && Math.abs(v.currentTime - clamped) <= tolerance) {
+      if ('requestVideoFrameCallback' in v) {
+        await waitForAnimationFrame();
+      } else {
+        await waitForAnimationFrame();
+        await waitForAnimationFrame();
+      }
+      return;
+    }
+
+    if ('requestVideoFrameCallback' in v) {
+      const confirmed = await new Promise(resolve => {
+        let settled = false;
+        let timer;
+        const finish = value => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        };
+        const callback = (_, meta) => {
+          if (v.readyState >= 2 && !v.seeking) finish(true);
+          else if (Math.abs(meta.mediaTime - clamped) <= tolerance) finish(true);
+          else v.requestVideoFrameCallback(callback);
+        };
+        timer = setTimeout(() => finish(false), timeoutMs);
+        v.requestVideoFrameCallback(callback);
+        v.currentTime = clamped;
+      });
+      if (confirmed) return;
+    } else {
+      const sought = await new Promise(resolve => {
+        let settled = false;
+        let timer;
+        const finish = value => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          v.removeEventListener('seeked', onSeeked);
+          v.removeEventListener('error', onError);
+          resolve(value);
+        };
+        const onSeeked = () => finish(true);
+        const onError = () => finish(false);
+        timer = setTimeout(() => finish(false), timeoutMs);
+        v.addEventListener('seeked', onSeeked, { once: true });
+        v.addEventListener('error', onError, { once: true });
+        v.currentTime = clamped;
+      });
+      if (sought) {
+        await waitForAnimationFrame();
+        await waitForAnimationFrame();
+        if (v.readyState >= 2 && !v.seeking && Math.abs(v.currentTime - clamped) <= tolerance) return;
+      }
+    }
+  }
+
+  const error = new Error(`Could not decode video frame at ${clamped.toFixed(3)}s`);
+  error.code = 'VIDEO_FRAME_UNAVAILABLE';
+  throw error;
+}
+
+async function startVideoPlayback(v, onFrame) {
+  let signalResolve;
+  let signalReject;
+  const signal = new Promise((resolve, reject) => {
+    signalResolve = resolve;
+    signalReject = reject;
+  });
+  let timer;
+  const onPlaying = () => signalResolve();
+  const onError = () => signalReject(new Error('Could not start video playback'));
+
+  v.addEventListener('playing', onPlaying, { once: true });
+  v.addEventListener('error', onError, { once: true });
+  if ('requestVideoFrameCallback' in v) {
+    v.requestVideoFrameCallback((now, meta) => {
+      onFrame?.(now, meta);
+      signalResolve();
+    });
+  }
+
+  try {
+    timer = setTimeout(() => signalReject(new Error('Timed out waiting for video playback')), 900);
+    await v.play();
+    await signal;
+    if (!('requestVideoFrameCallback' in v)) {
+      await waitForAnimationFrame();
+      await waitForAnimationFrame();
+    }
+  } finally {
+    clearTimeout(timer);
+    v.removeEventListener('playing', onPlaying);
+    v.removeEventListener('error', onError);
+  }
+}
+
 // ---------------------------------------------------------- MP4 export (WebCodecs + mp4-muxer)
 async function exportVideoMp4(onProgress) {
   if (!S.music || !S.stems) return;
@@ -293,8 +400,9 @@ async function exportVideoMp4(onProgress) {
   const wasPlaying = S.playing;
   if (wasPlaying) stop();
 
+  const hasWebCodecs = typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined' && typeof Mp4Muxer !== 'undefined';
+
   try {
-    const hasWebCodecs = typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined' && typeof Mp4Muxer !== 'undefined';
     if (!hasWebCodecs) {
       return await exportVideoWithMediaRecorder(onProgress);
     }
@@ -466,36 +574,9 @@ async function exportVideoMp4(onProgress) {
       const t = f / fps;
 
       // Sync video element frame if input is video
-      if (S.proc.kind === 'video' && S.src) {
-        const v = S.src;
-        if (t <= S.proc.duration) {
-          const target = Math.min(t, Math.max(0, S.proc.duration - 0.02));
-          if (Math.abs(v.currentTime - target) >= 0.015) {
-            v.currentTime = target;
-            await new Promise(resolve => {
-              let done = false;
-              const finish = () => {
-                if (!done) {
-                  done = true;
-                  v.removeEventListener('seeked', finish);
-                  v.removeEventListener('error', finish);
-                  resolve();
-                }
-              };
-              v.addEventListener('seeked', finish, { once: true });
-              v.addEventListener('error', finish, { once: true });
-              setTimeout(finish, 400);
-            });
-            if (v.readyState < 2) {
-              for (let k = 0; k < 6 && v.readyState < 2; k++) {
-                await new Promise(r => setTimeout(r, 10));
-              }
-            }
-          }
-        }
-      }
+      if (S.proc.kind === 'video' && S.src) await seekVideoFrame(S.src, t, fps);
 
-      drawExportFrame(offCanvas, t);
+      drawExportFrame(offCanvas, t, true);
 
       const keyFrame = f % (fps * 2) === 0;
       const timestampUs = Math.round(t * 1000000);
@@ -531,6 +612,11 @@ async function exportVideoMp4(onProgress) {
     onProgress?.('MP4 video exported!', 100);
     return { blob, filename };
   } catch (err) {
+    if (err?.code === 'VIDEO_FRAME_UNAVAILABLE') {
+      onProgress?.(`MP4 export cancelled: ${err.message}`, 0);
+      throw err;
+    }
+    if (!hasWebCodecs) throw err;
     console.warn('WebCodecs MP4 export encountered an issue, trying fallback:', err);
     return await exportVideoWithMediaRecorder(onProgress);
   } finally {
@@ -574,20 +660,28 @@ async function exportVideoWithMediaRecorder(onProgress) {
   S.exporting = true;
   updateExportButtons();
 
+  let decodedTime = null;
+  let trackDecoded = false;
+  let trackDecodedFrames;
   if (S.proc?.kind === 'video' && S.src) {
     const v = S.src;
     v.pause();
-    v.currentTime = 0;
-    await new Promise(resolve => {
-      v.addEventListener('seeked', resolve, { once: true });
-      setTimeout(resolve, 500);
-    });
-    v.play().catch(() => {});
+    try {
+      await seekVideoFrame(v, 0, 30);
+    } catch (err) {
+      onProgress?.(`Video export cancelled: ${err.message}`, 0);
+      throw err;
+    }
+    trackDecodedFrames = (_, meta) => {
+      decodedTime = meta.mediaTime;
+      if (trackDecoded) v.requestVideoFrameCallback(trackDecodedFrames);
+    };
   }
 
   const cv = document.createElement('canvas');
   cv.width = targetW;
   cv.height = targetH;
+  if (S.proc?.kind === 'video' && S.src) drawExportFrame(cv, 0, true);
 
   const ctx = ensureCtx();
   if (ctx.state === 'suspended') await ctx.resume();
@@ -621,12 +715,12 @@ async function exportVideoWithMediaRecorder(onProgress) {
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
   const duration = S.music.total;
-  const startTime = performance.now();
 
   return new Promise((resolve, reject) => {
     let animId;
     const cleanup = () => {
       cancelAnimationFrame(animId);
+      trackDecoded = false;
       sources.forEach(s => { try { s.stop(); } catch(e) {} });
       if (S.proc?.kind === 'video' && S.src) {
         S.src.pause();
@@ -649,27 +743,48 @@ async function exportVideoWithMediaRecorder(onProgress) {
 
     recorder.onerror = e => {
       cleanup();
+      onProgress?.('Video export failed while recording frames.', 0);
       reject(e);
     };
 
-    recorder.start(500);
+    const startRecording = async () => {
+      try {
+        if (S.proc?.kind === 'video' && S.src) {
+          trackDecoded = true;
+          await startVideoPlayback(S.src, trackDecodedFrames);
+        }
+        const startTime = performance.now();
+        recorder.start(500);
+        const renderTick = () => {
+          const elapsed = (performance.now() - startTime) / 1000;
+          const t = Math.min(elapsed, duration);
+          const v = S.proc?.kind === 'video' ? S.src : null;
+          const tolerance = 0.15;
+          const frameConfirmed = !v || (v.readyState >= 2 && !v.seeking && (
+            ('requestVideoFrameCallback' in v && typeof decodedTime === 'number')
+              ? Math.abs(decodedTime - t) <= tolerance
+              : Math.abs(v.currentTime - t) <= tolerance
+          ));
+          drawExportFrame(cv, t, frameConfirmed);
 
-    const renderTick = () => {
-      const elapsed = (performance.now() - startTime) / 1000;
-      const t = Math.min(elapsed, duration);
-      drawExportFrame(cv, t);
+          const pct = Math.min(95, Math.round((t / duration) * 100));
+          onProgress?.(`Recording video… ${pct}%`, pct);
 
-      const pct = Math.min(95, Math.round((t / duration) * 100));
-      onProgress?.(`Recording video… ${pct}%`, pct);
+          if (elapsed < duration) {
+            animId = requestAnimationFrame(renderTick);
+          } else {
+            setTimeout(() => recorder.stop(), 500);
+          }
+        };
 
-      if (elapsed < duration) {
         animId = requestAnimationFrame(renderTick);
-      } else {
-        setTimeout(() => recorder.stop(), 500);
+      } catch (err) {
+        cleanup();
+        onProgress?.(`Video export cancelled: ${err.message}`, 0);
+        reject(err);
       }
     };
-
-    animId = requestAnimationFrame(renderTick);
+    startRecording();
   });
 }
 
