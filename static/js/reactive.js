@@ -268,7 +268,7 @@ function drawSpotlight(cv) {
   if (!spotVideo() || S.src.readyState >= 2) x.drawImage(S.src, 0, 0, W, H);
   spotMask(x, W, H);
 }
-// dim everything outside the circle and outline it (also used on a video's channel panels)
+// dim everything outside the circle and outline it (also used on the channel panels)
 function spotMask(x, W, H) {
   const lw = Math.max(1, W / 600), cx = R.focus.fx * W, cy = R.focus.fy * H, r = SPOT.radius * H;
   x.fillStyle = 'rgba(0,0,0,.6)';
