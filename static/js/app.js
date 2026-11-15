@@ -60,23 +60,99 @@ async function changeVoice(gid, id) {
 }
 
 // ---------------------------------------------------------- mixer
+// Each part shows one bubble with its current instrument. Clicking it opens the instruments that
+// part can use as a ring of floating bubbles around it; choosing one switches the sound.
 const mixer = $('mixer');
+const orbit = { el: null, owner: null };
+
+function closeOrbit(returnFocus = true) {
+  if (!orbit.el) return;
+  const { el, owner } = orbit;
+  orbit.el = orbit.owner = null;
+  el.remove();
+  owner.setAttribute('aria-expanded', 'false');
+  if (returnFocus) owner.focus();
+}
+
+function openOrbit(g, owner, onChoose) {
+  closeOrbit(false);
+  const ids = ROLE_VOICES[g.role], n = ids.length, current = S.voice[g.id];
+  const radius = Math.max(76, Math.min(130, n * 54 / (2 * Math.PI)));
+  // centre the ring on the bubble, nudged inward so it stays on screen
+  const r = owner.getBoundingClientRect(), pad = radius + 34;
+  const cx = clamp(r.left + r.width / 2, pad, Math.max(pad, innerWidth - pad));
+  const cy = clamp(r.top + r.height / 2, pad, Math.max(pad, innerHeight - pad));
+
+  const el = document.createElement('div');
+  el.className = 'orbit';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', `Choose the ${g.name.toLowerCase()} instrument`);
+  const slots = ids.map((id, k) => {
+    // start at the top; even counts turn half a step so no bubble sits on the name label below the hub
+    const a = -Math.PI / 2 + (n % 2 ? 0 : Math.PI / n) + k * 2 * Math.PI / n;
+    const x = Math.round(Math.cos(a) * radius), y = Math.round(Math.sin(a) * radius);
+    return `<span class="orbit-slot" style="--x:${x}px;--y:${y}px;--i:${k}">`
+      + `<button type="button" class="bubble opt" data-voice="${id}" aria-label="${VOICES[id].name}" aria-pressed="${id === current}">${iconSvg(id)}</button></span>`;
+  }).join('');
+  el.innerHTML = '<div class="orbit-scrim"></div>'
+    + `<div class="orbit-ring" style="left:${cx}px;top:${cy}px">`
+    + `<button type="button" class="bubble hub" aria-label="Close">${iconSvg(current)}</button>`
+    + `<span class="orbit-name" aria-live="polite">${VOICES[current].name}</span>${slots}</div>`;
+  document.body.appendChild(el);
+  orbit.el = el; orbit.owner = owner;
+  owner.setAttribute('aria-expanded', 'true');
+
+  const opts = [...el.querySelectorAll('.opt')], name = el.querySelector('.orbit-name');
+  const show = id => { name.textContent = VOICES[id].name; };
+  el.querySelector('.orbit-scrim').addEventListener('click', () => closeOrbit());
+  el.querySelector('.hub').addEventListener('click', () => closeOrbit());
+  opts.forEach((btn, k) => {
+    btn.addEventListener('click', () => { onChoose(btn.dataset.voice); closeOrbit(); });
+    btn.addEventListener('pointerenter', () => show(btn.dataset.voice));
+    btn.addEventListener('focus', () => show(btn.dataset.voice));
+    btn.addEventListener('pointerleave', () => show(document.activeElement?.dataset?.voice || current));
+  });
+  el.addEventListener('keydown', e => {
+    const k = opts.indexOf(document.activeElement);
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]
+      ?? (e.key === 'Tab' ? (e.shiftKey ? -1 : 1) : 0);
+    if (e.key === 'Escape') { e.preventDefault(); closeOrbit(); }
+    else if (step) { e.preventDefault(); opts[(Math.max(k, 0) + step + n) % n].focus(); }
+    else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : n - 1].focus(); }
+  });
+  requestAnimationFrame(() => el.classList.add('open'));   // let the bubbles fly out
+  (opts[ids.indexOf(current)] || opts[0]).focus({ preventScroll: true });
+}
+addEventListener('resize', () => closeOrbit(false));
+addEventListener('scroll', () => closeOrbit(false), { passive: true });
+
 for (const g of GROUPS) {
-  S.voice[g.id] = ROLE_VOICES[g.role][0];
+  const ids = ROLE_VOICES[g.role];
+  S.voice[g.id] = ids[0];
   const row = document.createElement('div');
   row.className = 'inst'; row.dataset.group = g.id;
-  const options = ROLE_VOICES[g.role].map(id => `<option value="${id}">${VOICES[id].name}</option>`).join('');
   row.innerHTML = `<input type="checkbox" id="mute-${g.id}" checked aria-label="Play the ${g.name.toLowerCase()}">`
     + `<span class="sw ${g.sw}"></span>`
-    + `<label class="nm" for="mute-${g.id}">${g.name}<small class="src">${g.src}</small></label>`
-    + `<select id="voice-${g.id}" aria-label="${g.name} instrument">${options}</select>`;
+    + `<div class="nm"><label for="mute-${g.id}">${g.name}</label><small class="src">${g.src}</small>`
+    + `<span class="cur" id="cur-${g.id}">${VOICES[ids[0]].name}</span></div>`
+    + `<button type="button" class="bubble main" aria-haspopup="dialog" aria-expanded="false"`
+    + ` aria-label="${g.name}: ${VOICES[ids[0]].name}. Choose another instrument">${iconSvg(ids[0])}<span class="more" aria-hidden="true">${ids.length}</span></button>`;
+
   row.querySelector('input').addEventListener('change', e => {
     S.mute[g.id] = !e.target.checked;
     row.classList.toggle('muted', S.mute[g.id]);
     if (S.graph) setGain(S.graph.groups[g.id].gain, S.mute[g.id] ? 0 : 1);
     S.dirty = true;
   });
-  row.querySelector('select').addEventListener('change', e => changeVoice(g.id, e.target.value));
+
+  const main = row.querySelector('.bubble.main');
+  const choose = id => {
+    main.querySelector('svg').outerHTML = iconSvg(id);
+    main.setAttribute('aria-label', `${g.name}: ${VOICES[id].name}. Choose another instrument`);
+    $('cur-' + g.id).textContent = VOICES[id].name;
+    if (S.voice[g.id] !== id) changeVoice(g.id, id);
+  };
+  main.addEventListener('click', () => (orbit.owner === main ? closeOrbit() : openOrbit(g, main, choose)));
   mixer.appendChild(row);
 }
 
