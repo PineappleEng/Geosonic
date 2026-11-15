@@ -237,7 +237,12 @@ function frame() {
     else drawScan($('imgCv'), S.src, t, true);
     if (cols) drawScan($('timeCv'), S.proc.slit, t, true, cols);
     ['cvR', 'cvG', 'cvB'].forEach((id, k) => {   // a video's panels show the current frame, split into channels
-      if (cols) drawVideo($(id), t, k); else drawScan($(id), S.proc.chans[k], t, false);
+      if (cols) drawVideo($(id), t, k);
+      else if (spot) {   // image under the spotlight: the whole channel, with the same circle as the picture
+        const cv = $(id), x = cv.getContext('2d');
+        x.clearRect(0, 0, cv.width, cv.height); x.drawImage(S.proc.chans[k], 0, 0, cv.width, cv.height);
+        spotMask(x, cv.width, cv.height);
+      } else drawScan($(id), S.proc.chans[k], t, false);
     });
     drawScore(t, C);
     if (R.hover) spotlightReadout(); else updateReadout(t);
