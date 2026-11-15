@@ -59,7 +59,44 @@ async function changeVoice(gid, id) {
   if (was) play();
   $('status').textContent = `Ready · ${m.ev.length} notes · ${fmt(m.total)}`;
 }
+// Cambia todos los instrumentos a un preset de género/ambiente y re-renderiza todos los stems juntos
+async function applyPreset(preset) {
+  for (const g of GROUPS) {
+    const allowed = ROLE_VOICES[g.role];
+    const target = allowed.includes(preset.voices[g.id]) ? preset.voices[g.id] : allowed[0];
+    S.voice[g.id] = target;
 
+    const row = mixer.querySelector(`[data-group="${g.id}"]`);
+    if (row) {
+      const main = row.querySelector('.bubble.main');
+      main.querySelector('svg').outerHTML = iconSvg(target);
+      main.setAttribute('aria-label', `${g.name}: ${VOICES[target].name}. Choose another instrument`);
+      $('cur-' + g.id).textContent = VOICES[target].name;
+    }
+  }
+
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    const active = btn.dataset.preset === preset.id;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+
+  describeBand();
+  const m = S.music;
+  if (!m || !S.stems) return;
+
+  const job = S.voiceJob = (S.voiceJob || 0) + 1;
+  $('status').textContent = `Rendering ${preset.name}…`;
+  await new Promise(r => setTimeout(r, 30));
+  if (job !== S.voiceJob || m !== S.music) return;
+
+  const newStems = renderStems(m);
+  const was = S.playing;
+  if (was) stop();
+  S.stems = newStems;
+  if (was) play();
+  $('status').textContent = `Ready · ${m.ev.length} notes · ${fmt(m.total)}`;
+}
 // ---------------------------------------------------------- mixer
 // Each part shows one bubble with its current instrument. Clicking it opens the instruments that
 // part can use as a ring of floating bubbles around it; choosing one switches the sound.
@@ -127,6 +164,21 @@ function openOrbit(g, owner, onChoose) {
 addEventListener('resize', () => closeOrbit(false));
 addEventListener('scroll', () => closeOrbit(false), { passive: true });
 
+const presetBar = $('presetBar');
+if (presetBar && typeof AMBIENT_PRESETS !== 'undefined') {
+  AMBIENT_PRESETS.forEach((p, idx) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn preset-btn' + (idx === 0 ? ' active' : '');
+    btn.dataset.preset = p.id;
+    btn.title = p.desc;
+    btn.setAttribute('aria-pressed', idx === 0 ? 'true' : 'false');
+    btn.textContent = p.name;
+    btn.addEventListener('click', () => applyPreset(p));
+    presetBar.appendChild(btn);
+  });
+}
+
 for (const g of GROUPS) {
   const ids = ROLE_VOICES[g.role];
   S.voice[g.id] = ids[0];
@@ -148,6 +200,7 @@ for (const g of GROUPS) {
 
   const main = row.querySelector('.bubble.main');
   const choose = id => {
+    document.querySelectorAll('.preset-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
     main.querySelector('svg').outerHTML = iconSvg(id);
     main.setAttribute('aria-label', `${g.name}: ${VOICES[id].name}. Choose another instrument`);
     $('cur-' + g.id).textContent = VOICES[id].name;
