@@ -39,9 +39,10 @@ function smooth3(x) {
   for (let i = 0; i < n; i++) o[i] = 0.25 * x[Math.max(0, i - 1)] + 0.5 * x[i] + 0.25 * x[Math.min(n - 1, i + 1)];
   return o;
 }
-function stretch(x) {
+// rescale to the input's own 0..1 range when it varies by more than minRange
+function stretch(x, minRange = 0.02) {
   let lo = Infinity, hi = -Infinity; for (const v of x) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
-  return hi - lo > 0.02 ? x.map(v => (v - lo) / (hi - lo)) : x;
+  return hi - lo > minRange ? x.map(v => (v - lo) / (hi - lo)) : x;
 }
 function median(x) {
   const s = Array.from(x).sort((a, b) => a - b), m = s.length >> 1;

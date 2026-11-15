@@ -31,9 +31,17 @@ function showMode(kind) {
   $('imgCv').classList.toggle('video', video);
   $('scanTitle').textContent = video ? 'Video from orbit' : 'View from orbit';
   $('beats').disabled = video; $('beatsNote').hidden = !video;
+  $('scanModeGroup').hidden = !video;
   const rx = $('reactive');   // reactive mode follows the cursor over a still image only
   rx.disabled = video;
   if (video && rx.checked) { rx.checked = false; rx.dispatchEvent(new Event('change')); }
+}
+// the caption under a video explains what the music is hearing in the chosen scan mode
+function videoCaption() {
+  const name = S.proc?.name ?? 'Video';
+  $('imgCaption').textContent = S.videoScan === 'frame'
+    ? `${name} · the music hears the whole frame on every beat. Click or drag on the timeline to jump.`
+    : `${name} · the highlighted strip is what the music hears right now; it sweeps across the frame once per section. Click or drag on the timeline to jump.`;
 }
 
 function processImage(img, label) {
@@ -139,12 +147,12 @@ async function processVideo(file) {
   S.videoUrl = url;
   v.addEventListener('seeked', () => { S.dirty = true; });
   S.src = v;
-  S.proc = { kind: 'video', U: n, h, k: w, aspect: W / H, fps, duration, iw: W, ih: H, ...A, chans, slit };
+  S.proc = { kind: 'video', U: n, h, k: w, aspect: W / H, fps, duration, iw: W, ih: H, ...A, chans, slit, name: file.name };
   showMode('video');
   const dv = $('imgCv'), ds = Math.min(1, 1200 / W);
   dv.width = Math.max(1, Math.round(W * ds)); dv.height = Math.max(1, Math.round(H * ds));
   for (const id of ['cvR', 'cvG', 'cvB']) { $(id).width = n; $(id).height = h; }
-  $('imgCaption').textContent = `${file.name} · the highlighted strip is what the music hears right now; it sweeps across the frame once per section. Click or drag on the timeline to jump.`;
+  videoCaption();
   $('d1').textContent = `${W} × ${H} px video, ${duration.toFixed(1)} s, analysed as ${n} frames of ${w} × ${h} px (${fps.toFixed(1)} per second).`;
   rebuild();
 }
