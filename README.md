@@ -6,9 +6,7 @@ Everything runs in the browser. Photos and videos you open are never uploaded.
 
 ## Demo
 
-[![Geosonic playing a video of the Space Shuttle in orbit. Click to watch with sound.](docs/SpaceShuttle-preview.jpg)](docs/SpaceShuttle.mp4)
-
-*A video of the Space Shuttle over the clouds, exported from the app (31 s, with sound). The red, green and blue channels, the readouts and the score follow the music as it plays. [Watch the video](docs/SpaceShuttle.mp4).*
+https://github.com/user-attachments/assets/0aa0d44e-8bb6-48c5-a7e1-3124f55ded81
 
 ## Running it
 
