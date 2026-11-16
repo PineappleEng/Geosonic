@@ -1,4 +1,4 @@
-// Image Sonifier · constants.js
+// Geosonic · constants.js
 // Musical and instrument tables shared by every other script: scales and modes, chord rules,
 // harmonic partials for the default instruments, and the band's parts shown in the mixer.
 

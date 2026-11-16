@@ -1,4 +1,4 @@
-// Image Sonifier · voices.js
+// Geosonic · voices.js
 // The instrument library. Every part of the band (melody, harmony, pad, drone, bass, arpeggio,
 // sparkle, texture) can be played by any instrument listed for it in ROLE_VOICES.
 // Mirrors VOICES / ROLE_VOICES in image_to_audio.py, so both make the same sounds.

@@ -1,4 +1,4 @@
-// Hearing Earth · reactive.js
+// Geosonic · reactive.js
 // Spotlight mode: with "Follow cursor" on, only the circle under the cursor is heard. The slices
 // of the scan play no part: every beat, a small live composer measures the pixels inside the circle
 // and turns them into music with the same mapping as the scan (red melody, green chords, blue

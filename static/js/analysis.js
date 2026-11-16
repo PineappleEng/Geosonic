@@ -1,4 +1,4 @@
-// Image Sonifier · analysis.js
+// Geosonic · analysis.js
 // Measures everything the composer needs from the loaded image or video: per beat, per bar
 // and per section brightness, color, detail, motion and light balance.
 

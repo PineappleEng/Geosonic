@@ -1,4 +1,4 @@
-// Image Sonifier · state.js
+// Geosonic · state.js
 // The one shared state object: the loaded image or video, the composed music, rendered
 // audio, user settings and playback position.
 

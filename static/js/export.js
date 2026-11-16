@@ -1,4 +1,4 @@
-// Hearing Earth · export.js
+// Geosonic · export.js
 // Exporting the generated sonification as MP3 audio or MP4 video.
 // Uses OfflineAudioContext for fast offline audio rendering, lamejs for MP3 encoding,
 // and WebCodecs (VideoEncoder/AudioEncoder) + mp4-muxer with MediaRecorder fallback for MP4.
@@ -174,7 +174,7 @@ async function exportAudioMp3(onProgress) {
 
     onProgress?.('Finalizing MP3 file…', 98);
     const blob = new Blob(mp3Data, { type: 'audio/mp3' });
-    const filename = `hearing-earth-${getExportBaseName()}.mp3`;
+    const filename = `geosonic-${getExportBaseName()}.mp3`;
     triggerDownload(blob, filename);
 
     onProgress?.('MP3 audio exported!', 100);
@@ -217,7 +217,7 @@ function drawVideoHud(cv, t) {
 
   const titleSize = Math.max(12, Math.min(18, Math.round(H * 0.035)));
   ctx.font = `600 ${titleSize}px "Sora", "IBM Plex Sans", system-ui, sans-serif`;
-  //ctx.fillText('Hearing Earth', pad, textY);
+  //ctx.fillText('Geosonic', pad, textY);
 
   // Right side: Musical choices at this point in orbit
   const i = clamp(Math.floor(t / m.beat), 0, m.beats - 1);
@@ -606,7 +606,7 @@ async function exportVideoMp4(onProgress) {
     muxer.finalize();
 
     const blob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
-    const filename = `hearing-earth-${getExportBaseName()}.mp4`;
+    const filename = `geosonic-${getExportBaseName()}.mp4`;
     triggerDownload(blob, filename);
 
     onProgress?.('MP4 video exported!', 100);
@@ -735,7 +735,7 @@ async function exportVideoWithMediaRecorder(onProgress) {
     recorder.onstop = () => {
       cleanup();
       const blob = new Blob(chunks, { type: mimeType });
-      const filename = `hearing-earth-${getExportBaseName()}.${ext}`;
+      const filename = `geosonic-${getExportBaseName()}.${ext}`;
       triggerDownload(blob, filename);
       onProgress?.(isMp4 ? 'MP4 video exported!' : 'Video exported (WebM)!', 100);
       resolve({ blob, filename });

@@ -1,4 +1,4 @@
-// Image Sonifier · landing.js
+// Geosonic · landing.js
 // Fills in "The band" on the landing page from the same instrument data the app uses
 // (GROUPS in constants.js, VOICES and ROLE_VOICES in voices.js), so the two never disagree.
 

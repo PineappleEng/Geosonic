@@ -1,4 +1,4 @@
-// Image Sonifier · icons.js
+// Geosonic · icons.js
 // A small line icon for every instrument in voices.js, drawn on a 24 × 24 grid with the current
 // text colour (so they follow the theme). iconSvg(id) returns the icon as an <svg> string.
 
