@@ -4,7 +4,13 @@ Geosonic turns photographs and videos of Earth taken from space into slow, peace
 
 Everything runs in the browser. Photos and videos you open are never uploaded.
 
+<<<<<<< HEAD
 [![Geosonic playing a video of the Space Shuttle in orbit. Click to watch with sound.](docs/SpaceShuttle.mp4)](docs/SpaceShuttle.mp4)
+=======
+## Demo
+
+https://github.com/user-attachments/assets/0aa0d44e-8bb6-48c5-a7e1-3124f55ded81
+>>>>>>> 5e9b5d5 (Embed the demo video in the README)
 
 ## Running it
 
