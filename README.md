@@ -1,6 +1,6 @@
-# Hearing Earth
+# Geosonic
 
-Hearing Earth turns photographs and videos of Earth taken from space into slow, peaceful music. Oceans, forests, deserts, clouds and city lights each get a sound of their own. That gives people who are blind or have low vision a way into images that are usually only seen, and lets blind and sighted listeners hear the same picture together.
+Geosonic turns photographs and videos of Earth taken from space into slow, peaceful music. Oceans, forests, deserts, clouds and city lights each get a sound of their own. That gives people who are blind or have low vision a way into images that are usually only seen, and lets blind and sighted listeners hear the same picture together.
 
 Everything runs in the browser. Photos and videos you open are never uploaded.
 

@@ -1,4 +1,4 @@
-// Image Sonifier · playback.js
+// Geosonic · playback.js
 // Web Audio playback: the mixing graph (soft clip, compressor, reverb, per-instrument
 // mute and reverb sends) and play / pause / position.
 

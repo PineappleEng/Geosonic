@@ -1,4 +1,4 @@
-// Image Sonifier · view.js
+// Geosonic · view.js
 // Drawing: the scanned image or video with its current slice, the timeline and channel
 // thumbnails, the score, the live readout, and the animation loop that keeps video in sync.
 

@@ -1,4 +1,4 @@
-// Image Sonifier · app.js
+// Geosonic · app.js
 // Wiring: rebuilding the music when the input or settings change, the instrument mixer,
 // controls, scrubbing, file loading, and start-up with the sample image.
 

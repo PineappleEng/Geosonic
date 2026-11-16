@@ -1,4 +1,4 @@
-// Image Sonifier · instruments.js
+// Geosonic · instruments.js
 // Sound synthesis: the four engines that play the instruments in voices.js, and rendering all
 // note events into one stereo buffer per instrument group (one group can be re-rendered alone).
 
