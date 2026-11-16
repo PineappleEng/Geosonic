@@ -1,4 +1,4 @@
-// Image Sonifier · util.js
+// Geosonic · util.js
 // Small helpers: DOM lookup, number formatting, seeded random numbers, and the slicing,
 // smoothing and statistics functions the analysis uses (they mirror the Python script).
 

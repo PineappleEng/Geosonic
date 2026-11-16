@@ -1,4 +1,4 @@
-// Image Sonifier · media.js
+// Geosonic · media.js
 // Loading inputs. Images and videos both become "units" laid out [unit][row][col]:
 // an image unit is one pixel column, a video unit is one sampled frame. Also the sample image.
 

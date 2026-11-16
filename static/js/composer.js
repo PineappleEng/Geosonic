@@ -1,4 +1,4 @@
-// Image Sonifier · composer.js
+// Geosonic · composer.js
 // Turns the analysis into a list of note events for every instrument (mirrors compose() in
 // image_to_audio.py): sections, slow chords, drone, harp, air texture, celesta, melody and flute.
 

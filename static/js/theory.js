@@ -1,4 +1,4 @@
-// Image Sonifier · theory.js
+// Geosonic · theory.js
 // Music theory helpers: choosing keys, building and naming chords, harmony notes.
 
 // ---------------------------------------------------------- music theory
