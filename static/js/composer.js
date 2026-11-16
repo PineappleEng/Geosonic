@@ -159,5 +159,7 @@ function compose() {
     if (gap > a.dur - 0.02 && gap < a.dur + 0.5 * beat) a.dur = Math.max(a.dur, gap + 0.04);
   }
 
-  return { ...A, beat, bar, sections, barInfo, ev, mel, harm, rhythm, motion, total: beats * beat + 7 };
+  // motion here is the melody's movement per beat (words); the video's frame-to-frame motion (A.motion,
+  // numbers) is kept as motionRel, scaled to the busiest beat, for the "Motion" readout
+  return { ...A, beat, bar, sections, barInfo, ev, mel, harm, rhythm, motion, motionRel: stretch(A.motion), total: beats * beat + 7 };
 }

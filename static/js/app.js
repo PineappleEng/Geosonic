@@ -21,7 +21,6 @@ async function rebuild() {
   $('rBeats').textContent = m.beats; $('rBars').textContent = m.bars;
   $('cMeter').textContent = `${m.meter}/4`;
   $('cMeterBy').textContent = `${video ? 'video' : 'image'} is ${m.aspect.toFixed(2)} : 1 (${m.meter === 5 ? 'panorama' : m.meter === 3 ? 'portrait' : 'landscape'})`;
-  m.motionRel = stretch(m.motion);
   $('cSwing').textContent = m.swing < 0.01 ? 'straight' : `${Math.round(m.swing / 0.17 * 100)}%`;
   $('playBtn').disabled = true;
   updateExportButtons();
